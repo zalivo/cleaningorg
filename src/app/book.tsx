@@ -411,6 +411,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
   },
+  addressRow: { flexDirection: "row", alignItems: "stretch", gap: 8 },
+  addressInput: { flex: 1 },
+  mapBtn: {
+    width: 48,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   multiline: { minHeight: 80, textAlignVertical: "top" },
   summary: {
     borderRadius: 14,
