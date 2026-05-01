@@ -624,7 +624,7 @@ export default function BookRoute() {
                       <Text
                         style={[styles.summaryBreakdown, { color: colors.text }]}
                       >
-                        {`${formatRatePerHour(cleaner.hourlyRate)} · ${formatHours(hours)}`}
+                        {`${t("book.cleaner")} · ${formatRatePerHour(cleaner.hourlyRate)} · ${formatHours(hours)}`}
                       </Text>
                       <Text
                         style={[styles.summaryBreakdown, { color: colors.text }]}
