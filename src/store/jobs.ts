@@ -309,15 +309,17 @@ export function useJobsForBooker(bookerId: string): Job[] {
 }
 
 export function useJobsForCleaner(cleanerId: string): Job[] {
+  // My Jobs holds the jobs awaiting cleaner action — ready-to-clean and
+  // cleaning. Once the cleaner submits (`ready-for-review` or beyond), the
+  // job moves to History so the cleaner can still see it during review,
+  // instead of disappearing until the reviewer approves. See issue #37.
   return useJobsStore(
     useShallow((s) =>
       s.jobs
         .filter(
           (j) =>
             j.cleanerId === cleanerId &&
-            (j.status === "ready-to-clean" ||
-              j.status === "cleaning" ||
-              j.status === "ready-for-review")
+            (j.status === "ready-to-clean" || j.status === "cleaning")
         )
         .sort(bySchedule)
     )
@@ -339,13 +341,21 @@ export function useJobsForReviewer(reviewerId: string): Job[] {
 }
 
 export function useHistoryForCleaner(cleanerId: string): Job[] {
+  // Cleaner's History holds everything past the "I am still working on this"
+  // states. Submitted jobs (`ready-for-review`, `reviewing`) belong here —
+  // the work is finished from the cleaner's perspective; they're just
+  // waiting for the reviewer's verdict. Earnings are still gated on `done`
+  // by useCleanerEarnings, so credit doesn't move until approval. See #37.
   return useJobsStore(
     useShallow((s) =>
       s.jobs
         .filter(
           (j) =>
             j.cleanerId === cleanerId &&
-            (j.status === "done" || j.status === "cancelled")
+            (j.status === "ready-for-review" ||
+              j.status === "reviewing" ||
+              j.status === "done" ||
+              j.status === "cancelled")
         )
         .sort(byScheduleDesc)
     )
