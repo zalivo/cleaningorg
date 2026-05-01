@@ -18,6 +18,10 @@ export default function Layout() {
           name="pros/[id]"
           options={{ headerShown: true, title: "" }}
         />
+        <Stack.Screen
+          name="jobs/[id]"
+          options={{ headerShown: true, title: "Job Details" }}
+        />
       </Stack>
     </ThemeProvider>
   );
