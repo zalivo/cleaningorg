@@ -22,6 +22,7 @@ import {
   type JobStatus,
   formatJobDate,
   formatJobWindow,
+  isJobLate,
 } from "@/data/jobs";
 import { openMapsForAddress } from "@/lib/maps";
 import { useActiveIdentity } from "@/store/identity";
@@ -79,6 +80,7 @@ export default function JobDetailRoute() {
   const jobId = job.id;
   const status = STATUS_STYLES[job.status];
   const actual = actualLine(job);
+  const late = isJobLate(job);
   const isAssignedCleaner =
     identity.role === "cleaner" && identity.id === job.cleanerId;
   const isAssignedReviewer =
@@ -163,6 +165,14 @@ export default function JobDetailRoute() {
           icon="calendar-outline"
           text={`Scheduled: ${formatJobWindow(job.scheduledStart, job.scheduledEnd)}`}
         />
+        {late && (
+          <View style={styles.lateNote}>
+            <Ionicons name="time-outline" size={14} color="#92400E" />
+            <Text style={styles.lateNoteText}>
+              Late — past scheduled start, cleaner hasn't begun yet.
+            </Text>
+          </View>
+        )}
         {actual && <Row icon="time-outline" text={actual} />}
         <Row
           icon="person-circle-outline"
@@ -448,6 +458,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   declineText: { fontSize: 13, color: "#B91C1C", flex: 1 },
+  lateNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  lateNoteText: { fontSize: 12, color: "#92400E", flex: 1 },
   title: { fontSize: 24, fontWeight: "700" },
   summary: {
     borderRadius: 14,
