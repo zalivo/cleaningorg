@@ -13,8 +13,10 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
+import { EmbeddedMap } from "@/components/embedded-map";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { type JobStatus, formatJobDate } from "@/data/jobs";
+import { openMapsForAddress } from "@/lib/maps";
 import { useActiveIdentity } from "@/store/identity";
 import { useJob, useJobsStore } from "@/store/jobs";
 
@@ -119,11 +121,28 @@ export default function JobDetailRoute() {
           { backgroundColor: colors.card, borderColor: colors.border },
         ]}
       >
-        <Row icon="location-outline" text={job.address} />
+        <Row
+          icon="location-outline"
+          text={job.address}
+          onPress={() => openMapsForAddress(job.address)}
+          actionIcon="open-outline"
+          accessibilityLabel={`Open ${job.address} in maps`}
+        />
         <Row icon="calendar-outline" text={formatJobDate(job.date)} />
         <Row icon="person-circle-outline" text={`Cleaner: ${job.cleanerName}`} />
         <Row icon="shield-checkmark-outline" text={`Reviewer: ${job.reviewerName}`} />
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionLabel, { color: colors.text }]}>
+          Location
+        </Text>
+        <EmbeddedMap
+          address={job.address}
+          height={200}
+          showOpenButton={false}
+        />
       </View>
 
       {/* ---- Booker actions ---- */}
@@ -267,22 +286,64 @@ export default function JobDetailRoute() {
 function Row({
   icon,
   text,
+  onPress,
+  actionIcon,
+  accessibilityLabel,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   text: string;
+  onPress?: () => void;
+  actionIcon?: keyof typeof Ionicons.glyphMap;
+  accessibilityLabel?: string;
 }) {
   const { colors } = useTheme();
-  return (
-    <View style={styles.row}>
+  const content = (
+    <>
       <Ionicons name={icon} size={16} color={colors.text} />
-      <Text style={[styles.rowText, { color: colors.text }]}>{text}</Text>
-    </View>
+      <Text
+        style={[
+          styles.rowText,
+          { color: onPress ? BRAND : colors.text },
+        ]}
+      >
+        {text}
+      </Text>
+      {onPress && (
+        <Ionicons
+          name={actionIcon ?? "chevron-forward"}
+          size={14}
+          color={BRAND}
+        />
+      )}
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="link"
+        accessibilityLabel={accessibilityLabel}
+        style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+  return <View style={styles.row}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40, gap: 16 },
   empty: { flex: 1, alignItems: "center", justifyContent: "center" },
+  section: { gap: 8 },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    opacity: 0.6,
+    letterSpacing: 0.5,
+  },
   statusPill: {
     alignSelf: "flex-start",
     paddingHorizontal: 12,
