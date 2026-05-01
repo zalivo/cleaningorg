@@ -11,6 +11,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { type JobStatus, formatJobDate } from "@/data/jobs";
@@ -84,9 +85,15 @@ export default function JobDetailRoute() {
   }
 
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+    >
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.statusPill, { backgroundColor: status.bg }]}>
         <Text style={[styles.statusText, { color: status.fg }]}>
@@ -252,6 +259,7 @@ export default function JobDetailRoute() {
         </View>
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
