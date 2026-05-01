@@ -112,6 +112,11 @@ export const en = {
       pastTimeTitle: "Past time",
       pastTimeBody: "The scheduled start is in the past. Pick a time in the future.",
     },
+    history: {
+      cleanerSection: "Recent cleaners",
+      reviewerSection: "Recent reviewers",
+      hint: "{count}× · {date}",
+    },
   },
   job: {
     title: "Job Details",

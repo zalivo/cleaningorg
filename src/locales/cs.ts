@@ -111,6 +111,11 @@ export const cs: LocaleMessages = {
       pastTimeTitle: "Minulý čas",
       pastTimeBody: "Plánovaný začátek je v minulosti. Vyberte čas v budoucnosti.",
     },
+    history: {
+      cleanerSection: "Nedávní uklízeči",
+      reviewerSection: "Nedávní kontroloři",
+      hint: "{count}× · {date}",
+    },
   },
   job: {
     title: "Detail úklidu",
