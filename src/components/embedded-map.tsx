@@ -104,21 +104,25 @@ function resolveTarget({
 }
 
 /**
- * Embedded interactive map for an address or coordinate pair.
+ * Embedded read-only map for an address or coordinate pair.
  *
  * Renders a Google Maps embed inside a native WebView on iOS/Android and
- * a DOM `<iframe>` on web. The map is interactive (pan/zoom) on all
- * platforms.
+ * a DOM `<iframe>` on web. The map is purely visual: a transparent
+ * touch-blocker overlay sits above the embed so taps don't reach
+ * Google's "View larger map" / sign-in chrome that ships with the
+ * `?output=embed` page. To open the location in a real maps app the
+ * caller is expected to use the "Open in Maps" affordance (rendered
+ * above the blocker) or a tappable address row elsewhere on the screen.
  *
- * Note: this uses the unofficial `?output=embed` URL form, which Google
- * tolerates for read-only embeds without an API key. For production usage
- * with predictable terms-of-service guarantees, swap to the official Maps
- * Embed API (https://developers.google.com/maps/documentation/embed) and
- * pass an API key.
+ * Note: `?output=embed` is the unofficial form Google tolerates for
+ * read-only embeds without an API key. For production usage with
+ * predictable terms-of-service guarantees, swap to the official Maps
+ * Embed API (https://developers.google.com/maps/documentation/embed)
+ * and pass an API key.
  *
  * Usage:
- *   <EmbeddedMap address="742 Evergreen Terrace" />
- *   <EmbeddedMap latitude={37.78} longitude={-122.41} zoom={14} height={260} />
+ *   <EmbeddedMap address="Pařížská 5, 110 00 Praha 1" />
+ *   <EmbeddedMap latitude={50.0883} longitude={14.4199} zoom={14} height={260} />
  */
 export function EmbeddedMap({
   address,
@@ -228,6 +232,28 @@ export function EmbeddedMap({
           <ActivityIndicator color={BRAND} />
         </View>
       )}
+
+      {/*
+       * Touch-blocker. The Google Maps embed ships its own "View larger
+       * map", "Sign in", and dragging affordances; without this, a tap
+       * on the marker on web routes the user into Google's sign-in flow,
+       * and on native the WebView captures the gesture and tries to
+       * navigate inside the embed. Absorbing taps at this layer keeps
+       * the map purely decorative. The "Open in Maps" Pressable below is
+       * rendered later in JSX, so it sits above this blocker in z-order
+       * and remains interactive within its own bounds.
+       *
+       * `View` (not `Pressable`) so iOS doesn't briefly highlight on
+       * tap. `onStartShouldSetResponder` claims the gesture without
+       * any visual feedback, and on web the absoluteFill div captures
+       * clicks above the iframe via natural DOM stacking.
+       */}
+      <View
+        style={StyleSheet.absoluteFill}
+        onStartShouldSetResponder={() => true}
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
+      />
 
       {showOpenButton && (
         <Pressable
