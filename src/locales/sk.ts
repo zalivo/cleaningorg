@@ -86,20 +86,6 @@ export const sk: LocaleMessages = {
     emptyTitle: "Zatiaľ žiadne nehnuteľnosti",
     emptyBody: "Najprv pridaj nehnuteľnosť na karte Domov.",
     goHome: "Prejsť na Domov",
-    dates: {
-      tomorrow: "Zajtra",
-      "in-2-days": "O 2 dni",
-      weekend: "Cez víkend",
-      "next-week": "Budúci týždeň",
-    },
-    times: {
-      morning: "Ráno",
-      afternoon: "Popoludnie",
-      evening: "Večer",
-      "morning-hint": "8:00 – 12:00",
-      "afternoon-hint": "12:00 – 17:00",
-      "evening-hint": "17:00 – 21:00",
-    },
     wizard: {
       stepWhereWhen: "Kde a kedy",
       stepWho: "Kto",

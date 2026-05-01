@@ -87,20 +87,6 @@ export const en = {
     emptyTitle: "No properties yet",
     emptyBody: "Add a property from the Home tab before booking a cleaning.",
     goHome: "Go to Home",
-    dates: {
-      tomorrow: "Tomorrow",
-      "in-2-days": "In 2 days",
-      weekend: "This weekend",
-      "next-week": "Next week",
-    },
-    times: {
-      morning: "Morning",
-      afternoon: "Afternoon",
-      evening: "Evening",
-      "morning-hint": "8am – 12pm",
-      "afternoon-hint": "12pm – 5pm",
-      "evening-hint": "5pm – 9pm",
-    },
     wizard: {
       stepWhereWhen: "Where & When",
       stepWho: "Who",

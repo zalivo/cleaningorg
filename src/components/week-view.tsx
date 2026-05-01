@@ -35,6 +35,11 @@ function sameDay(a: Date, b: Date): boolean {
  * 7-day agenda for cleaners. Today + the next 6 days, each rendered as a
  * column of stacked blocks tinted by status. Empty days render a `—`.
  *
+ * Jobs scheduled outside this 7-day window are silently dropped from the
+ * view — that's the spec ("today through +6"). The cleaner can switch
+ * back to List mode to see the full set; the toggle persists in
+ * component state for the session.
+ *
  * The whole view is wrapped in a vertical ScrollView so a single very
  * busy day (12+ blocks) scrolls smoothly without breaking the row
  * layout. Columns flex equally so 7 fit on a phone width — the trade-off

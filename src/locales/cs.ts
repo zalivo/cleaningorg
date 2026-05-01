@@ -86,20 +86,6 @@ export const cs: LocaleMessages = {
     emptyTitle: "Zatím žádné nemovitosti",
     emptyBody: "Přidej nemovitost na záložce Domů, než si objednáš úklid.",
     goHome: "Přejít domů",
-    dates: {
-      tomorrow: "Zítra",
-      "in-2-days": "Za 2 dny",
-      weekend: "Tento víkend",
-      "next-week": "Příští týden",
-    },
-    times: {
-      morning: "Ráno",
-      afternoon: "Odpoledne",
-      evening: "Večer",
-      "morning-hint": "8:00 – 12:00",
-      "afternoon-hint": "12:00 – 17:00",
-      "evening-hint": "17:00 – 21:00",
-    },
     wizard: {
       stepWhereWhen: "Kde a kdy",
       stepWho: "Kdo",
