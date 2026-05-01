@@ -28,15 +28,10 @@ export default function HomeRoute() {
   const identity = useActiveIdentity();
   const properties = usePropertiesForOwner(identity.id);
   const addProperty = usePropertiesStore((s) => s.addProperty);
-  const updateProperty = usePropertiesStore((s) => s.updateProperty);
   const deleteProperty = usePropertiesStore((s) => s.deleteProperty);
   const t = useT();
 
-  const [editorMode, setEditorMode] = useState<
-    | { kind: "closed" }
-    | { kind: "adding" }
-    | { kind: "editing"; id: string }
-  >({ kind: "closed" });
+  const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
@@ -50,7 +45,7 @@ export default function HomeRoute() {
   const firstName = identity.name.split(" ")[0];
 
   function reset() {
-    setEditorMode({ kind: "closed" });
+    setAdding(false);
     setName("");
     setAddress("");
     setNotes("");
@@ -58,19 +53,10 @@ export default function HomeRoute() {
   }
 
   function startAdd() {
-    setEditorMode({ kind: "adding" });
+    setAdding(true);
     setName("");
     setAddress("");
     setNotes("");
-  }
-
-  function startEdit(id: string) {
-    const p = properties.find((p) => p.id === id);
-    if (!p) return;
-    setEditorMode({ kind: "editing", id });
-    setName(p.name);
-    setAddress(p.address);
-    setNotes(p.notes ?? "");
   }
 
   function notify(title: string, msg: string) {
@@ -96,33 +82,15 @@ export default function HomeRoute() {
     const trimmedNotes = notes.trim() || undefined;
     setSaving(true);
     try {
-      if (editorMode.kind === "editing") {
-        // Only re-geocode when the address actually changed; renaming the
-        // property or editing notes shouldn't trigger a network round-trip.
-        const existing = properties.find((p) => p.id === editorMode.id);
-        const addressChanged = !existing || existing.address !== trimmedAddress;
-        const coords = addressChanged
-          ? await geocodeAddress(trimmedAddress)
-          : null;
-        updateProperty(editorMode.id, {
-          name: trimmedName,
-          address: trimmedAddress,
-          notes: trimmedNotes,
-          ...(addressChanged
-            ? { latitude: coords?.latitude, longitude: coords?.longitude }
-            : {}),
-        });
-      } else {
-        const coords = await geocodeAddress(trimmedAddress);
-        addProperty({
-          name: trimmedName,
-          address: trimmedAddress,
-          notes: trimmedNotes,
-          ownerId: identity.id,
-          latitude: coords?.latitude,
-          longitude: coords?.longitude,
-        });
-      }
+      const coords = await geocodeAddress(trimmedAddress);
+      addProperty({
+        name: trimmedName,
+        address: trimmedAddress,
+        notes: trimmedNotes,
+        ownerId: identity.id,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
+      });
       reset();
     } finally {
       setSaving(false);
@@ -184,7 +152,7 @@ export default function HomeRoute() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {t("home.properties")}
             </Text>
-            {editorMode.kind === "closed" && (
+            {!adding && (
               <Pressable
                 onPress={startAdd}
                 style={({ pressed }) => [
@@ -200,7 +168,7 @@ export default function HomeRoute() {
             )}
           </View>
 
-          {editorMode.kind !== "closed" && (
+          {adding && (
             <View
               style={[
                 styles.addCard,
@@ -208,9 +176,7 @@ export default function HomeRoute() {
               ]}
             >
               <Text style={[styles.editorTitle, { color: colors.text }]}>
-                {editorMode.kind === "editing"
-                  ? t("property.edit")
-                  : t("property.new")}
+                {t("property.new")}
               </Text>
               <Text style={[styles.fieldLabel, { color: colors.text }]}>
                 {t("property.name")}
@@ -293,16 +259,14 @@ export default function HomeRoute() {
                   ]}
                 >
                   <Text style={styles.btnPrimaryText}>
-                    {editorMode.kind === "editing"
-                      ? t("property.saveChanges")
-                      : t("property.save")}
+                    {saving ? t("property.lookingUp") : t("property.save")}
                   </Text>
                 </Pressable>
               </View>
             </View>
           )}
 
-          {properties.length === 0 && editorMode.kind === "closed" ? (
+          {properties.length === 0 && !adding ? (
             <View
               style={[
                 styles.emptyCard,
@@ -320,13 +284,22 @@ export default function HomeRoute() {
           ) : (
             <View style={{ gap: 10 }}>
               {properties.map((p) => (
-                <View
+                <Pressable
                   key={p.id}
-                  style={[
+                  onPress={() =>
+                    router.push({
+                      pathname: "/properties/[id]",
+                      params: { id: p.id },
+                    })
+                  }
+                  accessibilityRole="link"
+                  accessibilityLabel={`Open ${p.name}`}
+                  style={({ pressed }) => [
                     styles.propertyCard,
                     {
                       backgroundColor: colors.card,
                       borderColor: colors.border,
+                      opacity: pressed ? 0.85 : 1,
                     },
                   ]}
                 >
@@ -369,7 +342,13 @@ export default function HomeRoute() {
                     </Pressable>
                     <View style={{ flexDirection: "row", gap: 8 }}>
                       <Pressable
-                        onPress={() => startEdit(p.id)}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/properties/[id]",
+                            params: { id: p.id, edit: "1" },
+                          })
+                        }
+                        accessibilityLabel={`Edit ${p.name}`}
                         style={({ pressed }) => [
                           styles.deleteSmall,
                           { opacity: pressed ? 0.5 : 0.7 },
@@ -383,6 +362,7 @@ export default function HomeRoute() {
                       </Pressable>
                       <Pressable
                         onPress={() => confirmDelete(p.id, p.name)}
+                        accessibilityLabel={`Delete ${p.name}`}
                         style={({ pressed }) => [
                           styles.deleteSmall,
                           { opacity: pressed ? 0.5 : 0.7 },
@@ -396,7 +376,7 @@ export default function HomeRoute() {
                       </Pressable>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               ))}
             </View>
           )}

@@ -45,6 +45,7 @@ export const sk: LocaleMessages = {
     cancel: "Zrušiť",
     save: "Uložiť nehnuteľnosť",
     saveChanges: "Uložiť zmeny",
+    lookingUp: "Vyhľadávanie adresy…",
     deletePrompt: "Vymazať \"{name}\"?",
     deleteAlertTitle: "Vymazať nehnuteľnosť?",
     deleteAlertBody: "\"{name}\" bude odstránená.",

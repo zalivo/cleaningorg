@@ -46,6 +46,7 @@ export const en = {
     cancel: "Cancel",
     save: "Save property",
     saveChanges: "Save changes",
+    lookingUp: "Looking up address…",
     deletePrompt: "Delete \"{name}\"?",
     deleteAlertTitle: "Delete property?",
     deleteAlertBody: "\"{name}\" will be removed.",

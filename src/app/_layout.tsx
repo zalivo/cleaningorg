@@ -29,6 +29,14 @@ export default function Layout() {
               headerBackTitle: "Back",
             }}
           />
+          <Stack.Screen
+            name="properties/[id]"
+            options={{
+              headerShown: true,
+              title: "Property",
+              headerBackTitle: "Back",
+            }}
+          />
         </Stack>
         <ToastContainer />
       </View>
