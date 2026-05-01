@@ -8,7 +8,6 @@ import {
   type Note,
   seedJobs,
 } from "@/data/jobs";
-import { scheduleJobNotification } from "@/lib/notifications";
 
 const DEFAULT_ROOMS = [
   "Kitchen",
@@ -98,7 +97,7 @@ function byScheduleDesc(a: Job, b: Job): number {
 
 export const useJobsStore = create<JobsState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       jobs: seedJobs,
       bookJob: (input) => {
         const startMs = new Date(input.scheduledStart).getTime();
@@ -142,7 +141,6 @@ export const useJobsStore = create<JobsState>()(
           createdAt: new Date().toISOString(),
         };
         set((s) => ({ jobs: [job, ...s.jobs] }));
-        scheduleJobNotification(job, "booked");
         return job;
       },
       startCleaning: (jobId) => {
@@ -161,20 +159,16 @@ export const useJobsStore = create<JobsState>()(
         }));
       },
       finishCleaning: (jobId) => {
-        let transitioned = false;
         set((s) => ({
-          jobs: patch(s.jobs, jobId, (j) => {
-            if (j.status !== "cleaning") return {};
-            transitioned = true;
-            return {
-              status: "ready-for-review",
-              actualEnd: new Date().toISOString(),
-            };
-          }),
+          jobs: patch(s.jobs, jobId, (j) =>
+            j.status === "cleaning"
+              ? {
+                  status: "ready-for-review",
+                  actualEnd: new Date().toISOString(),
+                }
+              : {}
+          ),
         }));
-        if (!transitioned) return;
-        const updated = get().jobs.find((j) => j.id === jobId);
-        if (updated) scheduleJobNotification(updated, "finished");
       },
       startReview: (jobId) => {
         set((s) => ({
@@ -184,53 +178,37 @@ export const useJobsStore = create<JobsState>()(
         }));
       },
       approve: (jobId) => {
-        let transitioned = false;
         set((s) => ({
-          jobs: patch(s.jobs, jobId, (j) => {
-            if (j.status !== "reviewing") return {};
-            transitioned = true;
-            return { status: "done" };
-          }),
+          jobs: patch(s.jobs, jobId, (j) =>
+            j.status === "reviewing" ? { status: "done" } : {}
+          ),
         }));
-        if (!transitioned) return;
-        const updated = get().jobs.find((j) => j.id === jobId);
-        if (updated) scheduleJobNotification(updated, "approved");
       },
       decline: (jobId, reason) => {
         // Reviewer rejection sends the job back to the cleaner. Clear the
         // previous attempt's actual window so the next `cleaning` transition
         // stamps fresh values.
-        let transitioned = false;
         set((s) => ({
-          jobs: patch(s.jobs, jobId, (j) => {
-            if (j.status !== "reviewing") return {};
-            transitioned = true;
-            return {
-              status: "ready-to-clean",
-              declineReason: reason,
-              declineCount: j.declineCount + 1,
-              checklist: j.checklist?.map((c) => ({ ...c, done: false })),
-              actualStart: undefined,
-              actualEnd: undefined,
-            };
-          }),
+          jobs: patch(s.jobs, jobId, (j) =>
+            j.status === "reviewing"
+              ? {
+                  status: "ready-to-clean",
+                  declineReason: reason,
+                  declineCount: j.declineCount + 1,
+                  checklist: j.checklist?.map((c) => ({ ...c, done: false })),
+                  actualStart: undefined,
+                  actualEnd: undefined,
+                }
+              : {}
+          ),
         }));
-        if (!transitioned) return;
-        const updated = get().jobs.find((j) => j.id === jobId);
-        if (updated) scheduleJobNotification(updated, "declined");
       },
       cancel: (jobId) => {
-        let transitioned = false;
         set((s) => ({
-          jobs: patch(s.jobs, jobId, (j) => {
-            if (j.status !== "ready-to-clean") return {};
-            transitioned = true;
-            return { status: "cancelled" };
-          }),
+          jobs: patch(s.jobs, jobId, (j) =>
+            j.status === "ready-to-clean" ? { status: "cancelled" } : {}
+          ),
         }));
-        if (!transitioned) return;
-        const updated = get().jobs.find((j) => j.id === jobId);
-        if (updated) scheduleJobNotification(updated, "cancelled");
       },
       toggleChecklist: (jobId, room) => {
         set((s) => ({
