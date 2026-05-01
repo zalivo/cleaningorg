@@ -129,8 +129,15 @@ export default function JobDetailRoute() {
           accessibilityLabel={`Open ${job.address} in maps`}
         />
         <Row icon="calendar-outline" text={formatJobDate(job.date)} />
-        <Row icon="person-circle-outline" text={`Cleaner: ${job.cleanerName}`} />
-        <Row icon="shield-checkmark-outline" text={`Reviewer: ${job.reviewerName}`} />
+        <Row
+          icon="person-circle-outline"
+          text={`Cleaner: ${job.cleanerName}`}
+          onPress={() => router.push(`/pros/${job.cleanerId}`)}
+        />
+        <Row
+          icon="shield-checkmark-outline"
+          text={`Reviewer: ${job.reviewerName}`}
+        />
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
       </View>
 

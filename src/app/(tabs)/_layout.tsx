@@ -3,11 +3,20 @@ import { useTheme } from "@react-navigation/native";
 import { Tabs } from "expo-router";
 import { BRAND } from "@/constants/colors";
 import { useActiveIdentity } from "@/store/identity";
+import {
+  useJobsForBooker,
+  useJobsForCleaner,
+  useJobsForReviewer,
+} from "@/store/jobs";
 
 export default function TabsLayout() {
   const { colors } = useTheme();
   const identity = useActiveIdentity();
   const role = identity.role;
+
+  const bookerJobs = useJobsForBooker(identity.id);
+  const cleanerJobs = useJobsForCleaner(identity.id);
+  const reviewerJobs = useJobsForReviewer(identity.id);
 
   const jobsLabel =
     role === "booker"
@@ -15,6 +24,13 @@ export default function TabsLayout() {
       : role === "cleaner"
         ? "My Jobs"
         : "To Review";
+
+  const jobsCount =
+    role === "booker"
+      ? bookerJobs.length
+      : role === "cleaner"
+        ? cleanerJobs.length
+        : reviewerJobs.length;
 
   return (
     <Tabs
@@ -42,6 +58,8 @@ export default function TabsLayout() {
         name="jobs"
         options={{
           title: jobsLabel,
+          tabBarBadge: jobsCount > 0 ? jobsCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: BRAND, color: "white" },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" color={color} size={size} />
           ),

@@ -18,31 +18,54 @@ import { useActiveIdentity } from "@/store/identity";
 import { usePropertiesForOwner, usePropertiesStore } from "@/store/properties";
 
 export default function HomeRoute() {
+  // ALL hooks must be called before any early return — switching identity
+  // would otherwise change the hook count and trigger React's rules-of-hooks
+  // crash ("Rendered fewer hooks than expected").
   const { colors } = useTheme();
   const router = useRouter();
   const identity = useActiveIdentity();
+  const properties = usePropertiesForOwner(identity.id);
+  const addProperty = usePropertiesStore((s) => s.addProperty);
+  const updateProperty = usePropertiesStore((s) => s.updateProperty);
+  const deleteProperty = usePropertiesStore((s) => s.deleteProperty);
 
-  // Home is admin-only. If a non-booker lands here (e.g. cold reload while
-  // their role is active), bounce them to their primary tab.
+  const [editorMode, setEditorMode] = useState<
+    | { kind: "closed" }
+    | { kind: "adding" }
+    | { kind: "editing"; id: string }
+  >({ kind: "closed" });
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
+
+  // Home is admin-only. Bounce non-bookers to their primary tab.
   if (identity.role !== "booker") {
     return <Redirect href="/(tabs)/jobs" />;
   }
 
   const firstName = identity.name.split(" ")[0];
-  const properties = usePropertiesForOwner(identity.id);
-  const addProperty = usePropertiesStore((s) => s.addProperty);
-  const deleteProperty = usePropertiesStore((s) => s.deleteProperty);
-
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [notes, setNotes] = useState("");
 
   function reset() {
-    setAdding(false);
+    setEditorMode({ kind: "closed" });
     setName("");
     setAddress("");
     setNotes("");
+  }
+
+  function startAdd() {
+    setEditorMode({ kind: "adding" });
+    setName("");
+    setAddress("");
+    setNotes("");
+  }
+
+  function startEdit(id: string) {
+    const p = properties.find((p) => p.id === id);
+    if (!p) return;
+    setEditorMode({ kind: "editing", id });
+    setName(p.name);
+    setAddress(p.address);
+    setNotes(p.notes ?? "");
   }
 
   function notify(title: string, msg: string) {
@@ -53,12 +76,20 @@ export default function HomeRoute() {
   function submit() {
     if (!name.trim()) return notify("Name required", "Give the property a short name.");
     if (!address.trim()) return notify("Address required", "Type the address.");
-    addProperty({
-      name: name.trim(),
-      address: address.trim(),
-      notes: notes.trim() || undefined,
-      ownerId: identity.id,
-    });
+    if (editorMode.kind === "editing") {
+      updateProperty(editorMode.id, {
+        name: name.trim(),
+        address: address.trim(),
+        notes: notes.trim() || undefined,
+      });
+    } else {
+      addProperty({
+        name: name.trim(),
+        address: address.trim(),
+        notes: notes.trim() || undefined,
+        ownerId: identity.id,
+      });
+    }
     reset();
   }
 
@@ -113,9 +144,9 @@ export default function HomeRoute() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               My properties
             </Text>
-            {!adding && (
+            {editorMode.kind === "closed" && (
               <Pressable
-                onPress={() => setAdding(true)}
+                onPress={startAdd}
                 style={({ pressed }) => [
                   styles.addBtn,
                   { borderColor: BRAND, opacity: pressed ? 0.7 : 1 },
@@ -127,13 +158,16 @@ export default function HomeRoute() {
             )}
           </View>
 
-          {adding && (
+          {editorMode.kind !== "closed" && (
             <View
               style={[
                 styles.addCard,
                 { backgroundColor: colors.card, borderColor: colors.border },
               ]}
             >
+              <Text style={[styles.editorTitle, { color: colors.text }]}>
+                {editorMode.kind === "editing" ? "Edit property" : "New property"}
+              </Text>
               <Text style={[styles.fieldLabel, { color: colors.text }]}>Name</Text>
               <TextInput
                 value={name}
@@ -202,13 +236,15 @@ export default function HomeRoute() {
                     { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
                   ]}
                 >
-                  <Text style={styles.btnPrimaryText}>Save property</Text>
+                  <Text style={styles.btnPrimaryText}>
+                    {editorMode.kind === "editing" ? "Save changes" : "Save property"}
+                  </Text>
                 </Pressable>
               </View>
             </View>
           )}
 
-          {properties.length === 0 && !adding ? (
+          {properties.length === 0 && editorMode.kind === "closed" ? (
             <View
               style={[
                 styles.emptyCard,
@@ -273,15 +309,34 @@ export default function HomeRoute() {
                     >
                       <Text style={styles.bookSmallText}>Book</Text>
                     </Pressable>
-                    <Pressable
-                      onPress={() => confirmDelete(p.id, p.name)}
-                      style={({ pressed }) => [
-                        styles.deleteSmall,
-                        { opacity: pressed ? 0.5 : 0.7 },
-                      ]}
-                    >
-                      <Ionicons name="trash-outline" size={16} color={colors.text} />
-                    </Pressable>
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <Pressable
+                        onPress={() => startEdit(p.id)}
+                        style={({ pressed }) => [
+                          styles.deleteSmall,
+                          { opacity: pressed ? 0.5 : 0.7 },
+                        ]}
+                      >
+                        <Ionicons
+                          name="create-outline"
+                          size={16}
+                          color={colors.text}
+                        />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => confirmDelete(p.id, p.name)}
+                        style={({ pressed }) => [
+                          styles.deleteSmall,
+                          { opacity: pressed ? 0.5 : 0.7 },
+                        ]}
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={16}
+                          color={colors.text}
+                        />
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
               ))}
@@ -352,6 +407,7 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
   },
+  editorTitle: { fontSize: 14, fontWeight: "700", marginBottom: 4 },
   fieldLabel: { fontSize: 13, fontWeight: "600" },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
