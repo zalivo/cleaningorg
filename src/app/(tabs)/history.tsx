@@ -17,7 +17,21 @@ export default function HistoryRoute() {
   const cleanerHistory = useHistoryForCleaner(identity.id);
   const reviewerHistory = useHistoryForReviewer(identity.id);
 
-  const jobs = identity.role === "cleaner" ? cleanerHistory : reviewerHistory;
+  // History tab is hidden for booker (see (tabs)/_layout.tsx href: null);
+  // the empty array fallback is just defensive.
+  const jobs =
+    identity.role === "cleaner"
+      ? cleanerHistory
+      : identity.role === "reviewer"
+        ? reviewerHistory
+        : [];
+
+  const emptyCopy =
+    identity.role === "cleaner"
+      ? "No completed jobs yet."
+      : identity.role === "reviewer"
+        ? "No reviews completed yet."
+        : "No history.";
 
   return (
     <SafeAreaView
@@ -28,7 +42,7 @@ export default function HistoryRoute() {
         <Text style={[styles.title, { color: colors.text }]}>History</Text>
         {jobs.length === 0 ? (
           <Text style={[styles.empty, { color: colors.text }]}>
-            No completed work yet.
+            {emptyCopy}
           </Text>
         ) : (
           jobs.map((j) => (

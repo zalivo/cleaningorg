@@ -15,10 +15,13 @@ import { ServiceCard } from "@/components/service-card";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { professionals } from "@/data/professionals";
 import { services } from "@/data/services";
+import { useActiveIdentity } from "@/store/identity";
 
 export default function HomeRoute() {
   const { colors } = useTheme();
   const router = useRouter();
+  const identity = useActiveIdentity();
+  const firstName = identity.name.split(" ")[0];
   const topPros = [...professionals]
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 4);
@@ -28,7 +31,7 @@ export default function HomeRoute() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={[styles.greeting, { color: colors.text }]}>
-            Hi, John 👋
+            Hi, {firstName} 👋
           </Text>
           <Text style={[styles.subtitle, { color: colors.text }]}>
             Ready for a fresh space?
