@@ -1,10 +1,12 @@
 import { Confetti } from "@/components/confetti";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastContainer } from "@/components/toast";
+import { useT } from "@/lib/i18n";
 import { Stack } from "expo-router";
 import { View } from "react-native";
 
 export default function Layout() {
+  const t = useT();
   return (
     <ThemeProvider>
       <View style={{ flex: 1 }}>
@@ -15,19 +17,23 @@ export default function Layout() {
             options={{
               presentation: "modal",
               headerShown: true,
-              title: "Book a Cleaning",
+              title: t("book.title"),
             }}
           />
           <Stack.Screen
             name="pros/[id]"
-            options={{ headerShown: true, title: "", headerBackTitle: "Back" }}
+            options={{
+              headerShown: true,
+              title: "",
+              headerBackTitle: t("job.actions.back"),
+            }}
           />
           <Stack.Screen
             name="jobs/[id]"
             options={{
               headerShown: true,
-              title: "Job Details",
-              headerBackTitle: "Back",
+              title: t("job.title"),
+              headerBackTitle: t("job.actions.back"),
             }}
           />
           <Stack.Screen

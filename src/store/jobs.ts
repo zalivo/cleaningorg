@@ -34,13 +34,19 @@ export interface BookJobInput {
   /** ISO end of the booker-set window. Required, must be after start. */
   scheduledEnd: string;
   /**
-   * Snapshotted total in integer minor units (haléře — 1/100 of a koruna).
-   * Required — every job carries a price. Compute with
-   * `computePriceCents(cleaner.hourlyRate, start, end)` at the call site
-   * so the value matches the rate × duration shown to the booker at
-   * confirm time.
+   * Snapshotted combined total in integer minor units (haléře — 1/100 of
+   * a koruna). Required — every job carries a price. Compute with
+   * `computePriceCents(cleaner.hourlyRate, start, end) + reviewer.feeCents`
+   * at the call site so the value matches the breakdown shown to the
+   * booker at confirm time.
    */
   priceCents: number;
+  /**
+   * Reviewer's flat inspection fee component of the total, snapshotted
+   * from the Reviewer at booking time. Required for new bookings; older
+   * persisted jobs may have it `undefined`.
+   */
+  reviewerFeeCents: number;
   notes?: string;
 }
 
@@ -116,8 +122,18 @@ export const useJobsStore = create<JobsState>()(
         if (!Number.isFinite(input.priceCents) || input.priceCents < 0) {
           throw new Error(
             "Cannot create job: priceCents must be a non-negative finite integer. " +
-              "Compute the value with computePriceCents(cleaner.hourlyRate, scheduledStart, scheduledEnd) at the call site. " +
+              "Compute the value with computePriceCents(cleaner.hourlyRate, scheduledStart, scheduledEnd) + reviewer.feeCents at the call site. " +
               `Received priceCents=${JSON.stringify(input.priceCents)}.`
+          );
+        }
+        if (
+          !Number.isFinite(input.reviewerFeeCents) ||
+          input.reviewerFeeCents < 0
+        ) {
+          throw new Error(
+            "Cannot create job: reviewerFeeCents must be a non-negative finite integer. " +
+              "Pass `reviewer.feeCents` from the chosen reviewer at the call site. " +
+              `Received reviewerFeeCents=${JSON.stringify(input.reviewerFeeCents)}.`
           );
         }
         const job: Job = {
@@ -135,6 +151,7 @@ export const useJobsStore = create<JobsState>()(
           scheduledStart: input.scheduledStart,
           scheduledEnd: input.scheduledEnd,
           priceCents: input.priceCents,
+          reviewerFeeCents: input.reviewerFeeCents,
           notes: input.notes,
           status: "ready-to-clean",
           declineCount: 0,
@@ -260,13 +277,15 @@ export const useJobsStore = create<JobsState>()(
       //      v5 but priceCents now means haléře, not US cents, and seed
       //      values jumped 10× to realistic Czech rates. Bumping the key
       //      avoids hydrating v5 USD-shaped numbers as if they were CZK.
+      // v8 = added required reviewerFeeCents on every Job (cleaner pay +
+      //      reviewer flat fee make up priceCents).
       // v5 = snapshotted priceCents on every Job (rate × hours at booking).
       // v4 = scheduled/actual time windows on Job (was: single `date`).
       // v3 = added optional latitude/longitude snapshots for the embedded map.
       // v2 = property-based job model (was: service-based with totalPrice).
       // Key bumps orphan old payloads instead of hydrating malformed state
       // into the new types.
-      name: "cleaningorg/jobs.v7",
+      name: "cleaningorg/jobs.v8",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
@@ -350,37 +369,56 @@ export function useJob(jobId: string): Job | undefined {
 // ---------------- Cumulative totals (Profile screen) ----------------
 
 interface RoleTotals {
-  /** Sum of `priceCents` across realised (status === "done") jobs. */
+  /** Sum of the relevant cents amount across realised (status === "done") jobs. */
   totalCents: number;
   /** Number of jobs in that sum. */
   jobCount: number;
 }
 
-function tally(jobs: Job[]): RoleTotals {
-  let totalCents = 0;
-  for (const j of jobs) totalCents += j.priceCents;
-  return { totalCents, jobCount: jobs.length };
+/** Cleaner pay portion of a job: combined total minus the reviewer's fee. */
+function cleanerPayOf(job: Job): number {
+  return job.priceCents - (job.reviewerFeeCents ?? 0);
 }
 
 /** Cumulative earnings for a cleaner across completed jobs. */
 export function useCleanerEarnings(cleanerId: string): RoleTotals {
   return useJobsStore(
-    useShallow((s) =>
-      tally(
-        s.jobs.filter((j) => j.cleanerId === cleanerId && j.status === "done")
-      )
-    )
+    useShallow((s) => {
+      const jobs = s.jobs.filter(
+        (j) => j.cleanerId === cleanerId && j.status === "done"
+      );
+      let totalCents = 0;
+      for (const j of jobs) totalCents += cleanerPayOf(j);
+      return { totalCents, jobCount: jobs.length };
+    })
   );
 }
 
-/** Cumulative spend for a booker across completed jobs. */
+/** Cumulative inspection-fee earnings for a reviewer across completed jobs. */
+export function useReviewerEarnings(reviewerId: string): RoleTotals {
+  return useJobsStore(
+    useShallow((s) => {
+      const jobs = s.jobs.filter(
+        (j) => j.reviewerId === reviewerId && j.status === "done"
+      );
+      let totalCents = 0;
+      for (const j of jobs) totalCents += j.reviewerFeeCents ?? 0;
+      return { totalCents, jobCount: jobs.length };
+    })
+  );
+}
+
+/** Cumulative spend for a booker across completed jobs (cleaner pay + reviewer fee). */
 export function useBookerSpend(bookerId: string): RoleTotals {
   return useJobsStore(
-    useShallow((s) =>
-      tally(
-        s.jobs.filter((j) => j.bookerId === bookerId && j.status === "done")
-      )
-    )
+    useShallow((s) => {
+      const jobs = s.jobs.filter(
+        (j) => j.bookerId === bookerId && j.status === "done"
+      );
+      let totalCents = 0;
+      for (const j of jobs) totalCents += j.priceCents;
+      return { totalCents, jobCount: jobs.length };
+    })
   );
 }
 

@@ -210,6 +210,14 @@ export default function JobDetailRoute() {
           icon="cash-outline"
           text={t("job.total", { price: formatPrice(job.priceCents) })}
         />
+        {job.reviewerFeeCents !== undefined && job.reviewerFeeCents > 0 && (
+          <Row
+            icon="document-text-outline"
+            text={t("job.reviewerFeeLabel", {
+              price: formatPrice(job.reviewerFeeCents),
+            })}
+          />
+        )}
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
       </View>
 

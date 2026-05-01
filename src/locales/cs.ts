@@ -122,6 +122,9 @@ export const cs: LocaleMessages = {
     cleanedShort: "Předěláno {count}×",
     started: "Začátek: {when}",
     total: "Celkem: {price}",
+    totalLabel: "Celkem",
+    cleanerPayLabel: "Uklízeč: {price}",
+    reviewerFeeLabel: "Poplatek kontrolora: {price}",
     actions: {
       cancel: "Zrušit objednávku",
       cancelConfirmTitle: "Zrušit objednávku?",

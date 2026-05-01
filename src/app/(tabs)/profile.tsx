@@ -20,6 +20,7 @@ import {
   useBookerSpend,
   useCleanerEarnings,
   useJobsStore,
+  useReviewerEarnings,
 } from "@/store/jobs";
 import { usePropertiesStore } from "@/store/properties";
 
@@ -39,19 +40,22 @@ export default function ProfileRoute() {
     reviewer: t("profile.roles.reviewer"),
   };
 
-  // Both selectors run unconditionally (hooks rules). Each demo identity
-  // is bound to a single role, so the off-role selector's `id` filter
-  // never matches and that branch's totals are { totalCents: 0, jobCount: 0 }
-  // — the React work is small and the alternative (conditional hooks)
-  // would be a rules-of-hooks violation.
+  // All three selectors run unconditionally (hooks rules). Each demo
+  // identity is bound to a single role, so the off-role selector's `id`
+  // filter never matches and that branch's totals are
+  // { totalCents: 0, jobCount: 0 } — the React work is small and the
+  // alternative (conditional hooks) would be a rules-of-hooks violation.
   const cleanerEarnings = useCleanerEarnings(identity.id);
+  const reviewerEarnings = useReviewerEarnings(identity.id);
   const bookerSpend = useBookerSpend(identity.id);
   const totals =
     identity.role === "cleaner"
       ? { label: t("profile.totals.earnings"), ...cleanerEarnings }
-      : identity.role === "booker"
-        ? { label: t("profile.totals.spend"), ...bookerSpend }
-        : null;
+      : identity.role === "reviewer"
+        ? { label: t("profile.totals.earnings"), ...reviewerEarnings }
+        : identity.role === "booker"
+          ? { label: t("profile.totals.spend"), ...bookerSpend }
+          : null;
 
   const totalsSub =
     !totals

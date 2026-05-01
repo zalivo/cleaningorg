@@ -123,6 +123,9 @@ export const en = {
     cleanedShort: "Re-cleaned {count}×",
     started: "Started: {when}",
     total: "Total: {price}",
+    totalLabel: "Total",
+    cleanerPayLabel: "Cleaner: {price}",
+    reviewerFeeLabel: "Reviewer fee: {price}",
     actions: {
       cancel: "Cancel booking",
       cancelConfirmTitle: "Cancel booking?",

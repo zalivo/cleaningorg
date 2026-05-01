@@ -121,13 +121,16 @@ export default function BookRoute() {
 
   const scheduledWindow = resolveWindow(dateId, timeId, durationId);
   const cleaner = getProfessional(cleanerId);
-  const priceCents = cleaner
+  const reviewer = getReviewer(reviewerId);
+  const cleanerPayCents = cleaner
     ? computePriceCents(
         cleaner.hourlyRate,
         scheduledWindow.startISO,
         scheduledWindow.endISO,
       )
     : 0;
+  const reviewerFeeCents = reviewer?.feeCents ?? 0;
+  const priceCents = cleanerPayCents + reviewerFeeCents;
   const hours = estimatedHours(scheduledWindow.startISO, scheduledWindow.endISO);
 
   function pickProperty(id: string) {
@@ -158,15 +161,21 @@ export default function BookRoute() {
       return;
     }
 
-    const cleaner = getProfessional(cleanerId);
-    const reviewer = getReviewer(reviewerId);
-    if (!cleaner || !reviewer) {
+    const chosenCleaner = getProfessional(cleanerId);
+    const chosenReviewer = getReviewer(reviewerId);
+    if (!chosenCleaner || !chosenReviewer) {
       notify(
         t("book.alerts.bookingFailedTitle"),
         t("book.alerts.bookingFailedBody")
       );
       return;
     }
+
+    const computedCleanerPay = computePriceCents(
+      chosenCleaner.hourlyRate,
+      scheduledWindow.startISO,
+      scheduledWindow.endISO,
+    );
 
     bookJob({
       propertyId: property.id,
@@ -175,17 +184,14 @@ export default function BookRoute() {
       latitude: property.latitude,
       longitude: property.longitude,
       bookerId: identity.id,
-      cleanerId: cleaner.id,
-      cleanerName: cleaner.name,
-      reviewerId: reviewer.id,
-      reviewerName: reviewer.name,
+      cleanerId: chosenCleaner.id,
+      cleanerName: chosenCleaner.name,
+      reviewerId: chosenReviewer.id,
+      reviewerName: chosenReviewer.name,
       scheduledStart: scheduledWindow.startISO,
       scheduledEnd: scheduledWindow.endISO,
-      priceCents: computePriceCents(
-        cleaner.hourlyRate,
-        scheduledWindow.startISO,
-        scheduledWindow.endISO,
-      ),
+      priceCents: computedCleanerPay + chosenReviewer.feeCents,
+      reviewerFeeCents: chosenReviewer.feeCents,
       notes: notes.trim() || undefined,
     });
 
@@ -373,13 +379,43 @@ export default function BookRoute() {
               {formatJobWindow(scheduledWindow.startISO, scheduledWindow.endISO)}
             </Text>
             {cleaner && (
-              <View style={styles.summaryPriceRow}>
-                <Text style={[styles.summaryBreakdown, { color: colors.text }]}>
-                  {formatRatePerHour(cleaner.hourlyRate)} · {formatHours(hours)}
-                </Text>
-                <Text style={[styles.summaryPriceTotal, { color: BRAND }]}>
-                  {formatPrice(priceCents)}
-                </Text>
+              <View style={{ gap: 4 }}>
+                <View style={styles.summaryPriceRow}>
+                  <Text style={[styles.summaryBreakdown, { color: colors.text }]}>
+                    {`${t("book.cleaner")}: ${formatRatePerHour(cleaner.hourlyRate)} · ${formatHours(hours)}`}
+                  </Text>
+                  <Text style={[styles.summaryBreakdown, { color: colors.text }]}>
+                    {formatPrice(cleanerPayCents)}
+                  </Text>
+                </View>
+                {reviewer && (
+                  <View style={styles.summaryPriceRow}>
+                    <Text style={[styles.summaryBreakdown, { color: colors.text }]}>
+                      {`${t("book.reviewer")}`}
+                    </Text>
+                    <Text style={[styles.summaryBreakdown, { color: colors.text }]}>
+                      {formatPrice(reviewerFeeCents)}
+                    </Text>
+                  </View>
+                )}
+                <View
+                  style={[
+                    styles.summaryPriceRow,
+                    {
+                      borderTopWidth: StyleSheet.hairlineWidth,
+                      borderTopColor: colors.border,
+                      paddingTop: 6,
+                      marginTop: 2,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.summaryBreakdown, { color: colors.text, fontWeight: "700" }]}>
+                    {t("job.totalLabel")}
+                  </Text>
+                  <Text style={[styles.summaryPriceTotal, { color: BRAND }]}>
+                    {formatPrice(priceCents)}
+                  </Text>
+                </View>
               </View>
             )}
           </View>

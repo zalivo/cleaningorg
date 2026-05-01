@@ -43,12 +43,20 @@ export interface Job {
   /**
    * Total price for the job in integer minor currency units (haléře —
    * 1/100 of a koruna). Single currency v1: CZK. Snapshotted at booking
-   * time as the cleaner's `hourlyRate` × the scheduled duration in hours.
+   * time as cleaner pay (hourlyRate × hours) PLUS the reviewer's flat fee.
    * Stays put if rate or window later change; this is a transactional
    * record, not a recomputation. The field name keeps `Cents` for
    * historical reasons; read it as "minor units".
    */
   priceCents: number;
+
+  /**
+   * Reviewer's flat inspection fee for this job, snapshotted from the
+   * Reviewer at booking time. Component of `priceCents` (which is the
+   * combined total). Optional only because pre-fee-feature jobs in
+   * persisted storage may lack it; fresh seeds always set it.
+   */
+  reviewerFeeCents?: number;
 
   notes?: string;
   status: JobStatus;
@@ -76,7 +84,8 @@ export const seedJobs: Job[] = [
     reviewerName: "Priya Sharma",
     scheduledStart: "2026-05-04T10:00:00.000Z",
     scheduledEnd: "2026-05-04T12:00:00.000Z",
-    priceCents: 70000, // Maria Santos 350 Kč/hr × 2h
+    priceCents: 90000, // 350 Kč/hr × 2h cleaner = 700 + 200 Priya = 900 Kč
+    reviewerFeeCents: 20000,
     notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-to-clean",
     declineCount: 0,
@@ -98,7 +107,8 @@ export const seedJobs: Job[] = [
     scheduledEnd: "2026-05-02T13:00:00.000Z",
     actualStart: "2026-05-02T09:15:00.000Z",
     actualEnd: "2026-05-02T13:30:00.000Z",
-    priceCents: 140000, // Maria Santos 350 Kč/hr × 4h
+    priceCents: 165000, // 350 Kč/hr × 4h = 1400 + 250 Tom = 1650 Kč
+    reviewerFeeCents: 25000,
     notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-for-review",
     checklist: [
@@ -133,7 +143,8 @@ export const seedJobs: Job[] = [
     scheduledEnd: "2026-04-15T21:00:00.000Z",
     actualStart: "2026-04-15T18:00:00.000Z",
     actualEnd: "2026-04-15T20:45:00.000Z",
-    priceCents: 120000, // Aisha Patel 400 Kč/hr × 3h
+    priceCents: 140000, // 400 Kč/hr × 3h = 1200 + 200 Priya = 1400 Kč
+    reviewerFeeCents: 20000,
     notes: "Reception will let the cleaner in. After-hours only.",
     status: "done",
     declineCount: 0,

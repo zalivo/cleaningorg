@@ -122,6 +122,9 @@ export const sk: LocaleMessages = {
     cleanedShort: "Prerobené {count}×",
     started: "Začiatok: {when}",
     total: "Spolu: {price}",
+    totalLabel: "Spolu",
+    cleanerPayLabel: "Upratovač: {price}",
+    reviewerFeeLabel: "Poplatok kontrolóra: {price}",
     actions: {
       cancel: "Zrušiť objednávku",
       cancelConfirmTitle: "Zrušiť objednávku?",
