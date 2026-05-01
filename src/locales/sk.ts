@@ -81,6 +81,15 @@ export const sk: LocaleMessages = {
       "afternoon-hint": "12:00 – 17:00",
       "evening-hint": "17:00 – 21:00",
     },
+    wizard: {
+      stepWhereWhen: "Kde a kedy",
+      stepWho: "Kto",
+      stepReview: "Zhrnutie",
+      stepCount: "Krok {current} z {total}",
+      next: "Ďalej",
+      back: "Späť",
+      reviewHelp: "Prípadne pridaj poznámku a potvrď objednávku.",
+    },
     alerts: {
       addressRequired: "Adresa je povinná",
       addressBody: "Zadaj prosím adresu upratania.",

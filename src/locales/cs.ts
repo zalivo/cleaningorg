@@ -81,6 +81,15 @@ export const cs: LocaleMessages = {
       "afternoon-hint": "12:00 – 17:00",
       "evening-hint": "17:00 – 21:00",
     },
+    wizard: {
+      stepWhereWhen: "Kde a kdy",
+      stepWho: "Kdo",
+      stepReview: "Shrnutí",
+      stepCount: "Krok {current} z {total}",
+      next: "Další",
+      back: "Zpět",
+      reviewHelp: "Případně přidej poznámku a potvrď objednávku.",
+    },
     alerts: {
       addressRequired: "Adresa je povinná",
       addressBody: "Zadej prosím adresu úklidu.",

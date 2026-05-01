@@ -56,6 +56,16 @@ const DURATION_OPTIONS = [
 
 const DEFAULT_DURATION_ID = "2h";
 
+const STEPS = [1, 2, 3] as const;
+type Step = (typeof STEPS)[number];
+const TOTAL_STEPS = STEPS.length;
+
+const STEP_TITLE_KEYS: Record<Step, MessageKey> = {
+  1: "book.wizard.stepWhereWhen",
+  2: "book.wizard.stepWho",
+  3: "book.wizard.stepReview",
+};
+
 interface ScheduledWindow {
   startISO: string;
   endISO: string;
@@ -118,9 +128,11 @@ export default function BookRoute() {
   );
   const [reviewerId, setReviewerId] = useState<string>(reviewers[0].id);
   const [notes, setNotes] = useState<string>(property?.notes ?? "");
+  const [step, setStep] = useState<Step>(1);
 
   const scheduledWindow = resolveWindow(dateId, timeId, durationId);
   const cleaner = getProfessional(cleanerId);
+  const reviewer = getReviewer(reviewerId);
   const priceCents = cleaner
     ? computePriceCents(
         cleaner.hourlyRate,
@@ -132,13 +144,17 @@ export default function BookRoute() {
 
   function pickProperty(id: string) {
     setPropertyId(id);
-    // Refresh notes when picking a different property — but don't overwrite
-    // anything the user has already typed.
+    // Seed notes from the picked property — but never clobber what the user
+    // has already typed.
     if (!notes.trim()) {
       const next = myProperties.find((p) => p.id === id);
       if (next?.notes) setNotes(next.notes);
     }
   }
+
+  const goNext = () =>
+    setStep((s) => Math.min(TOTAL_STEPS, s + 1) as Step);
+  const goBack = () => setStep((s) => Math.max(1, s - 1) as Step);
 
   const handleConfirm = () => {
     if (!isBooker) {
@@ -147,19 +163,20 @@ export default function BookRoute() {
     }
     if (!property) {
       notify(t("book.alerts.propertyRequired"), t("book.alerts.propertyBody"));
+      setStep(1);
       return;
     }
     if (!cleanerId) {
       notify(t("book.alerts.cleanerRequired"), t("book.alerts.cleanerBody"));
+      setStep(2);
       return;
     }
     if (!reviewerId) {
       notify(t("book.alerts.reviewerRequired"), t("book.alerts.reviewerBody"));
+      setStep(2);
       return;
     }
 
-    const cleaner = getProfessional(cleanerId);
-    const reviewer = getReviewer(reviewerId);
     if (!cleaner || !reviewer) {
       notify(
         t("book.alerts.bookingFailedTitle"),
@@ -230,10 +247,7 @@ export default function BookRoute() {
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={[styles.header, { borderColor: colors.border }]}>
         {!isBooker && (
           <View style={[styles.roleBanner, { backgroundColor: "#FEF3C7" }]}>
             <Ionicons name="alert-circle" size={20} color="#92400E" />
@@ -246,161 +260,257 @@ export default function BookRoute() {
           </View>
         )}
 
-        {preselectedPro && (
-          <View style={[styles.proBanner, { backgroundColor: BRAND_LIGHT }]}>
-            <Ionicons name="person-circle" size={20} color={BRAND} />
-            <Text style={styles.proBannerText}>
-              {t("book.preselected", { name: preselectedPro.name })}
-            </Text>
-          </View>
+        <View style={styles.progressBar}>
+          {STEPS.map((s) => (
+            <View
+              key={s}
+              style={[
+                styles.progressSegment,
+                {
+                  backgroundColor: s <= step ? BRAND : colors.border,
+                },
+              ]}
+            />
+          ))}
+        </View>
+        <Text style={[styles.stepCount, { color: colors.text }]}>
+          {t("book.wizard.stepCount", { current: step, total: TOTAL_STEPS })}
+        </Text>
+        <Text style={[styles.stepTitle, { color: colors.text }]}>
+          {t(STEP_TITLE_KEYS[step])}
+        </Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        {step === 1 && (
+          <>
+            <Field label={t("book.property")}>
+              <View style={styles.chipsWrap}>
+                {myProperties.map((p) => (
+                  <Chip
+                    key={p.id}
+                    label={p.name}
+                    hint={p.address}
+                    selected={p.id === propertyId}
+                    onPress={() => pickProperty(p.id)}
+                  />
+                ))}
+              </View>
+            </Field>
+
+            <Field label={t("book.date")}>
+              <View style={styles.chipsWrap}>
+                {DATE_OPTIONS.map((d) => (
+                  <Chip
+                    key={d.id}
+                    label={t(`book.dates.${d.id}` as MessageKey)}
+                    selected={d.id === dateId}
+                    onPress={() => setDateId(d.id)}
+                  />
+                ))}
+              </View>
+            </Field>
+
+            <Field label={t("book.time")}>
+              <View style={styles.chipsWrap}>
+                {TIME_OPTIONS.map((opt) => (
+                  <Chip
+                    key={opt.id}
+                    label={t(`book.times.${opt.id}` as MessageKey)}
+                    hint={t(`book.times.${opt.id}-hint` as MessageKey)}
+                    selected={opt.id === timeId}
+                    onPress={() => setTimeId(opt.id)}
+                  />
+                ))}
+              </View>
+            </Field>
+
+            <Field label={t("book.duration")}>
+              <View style={styles.chipsWrap}>
+                {DURATION_OPTIONS.map((d) => (
+                  <Chip
+                    key={d.id}
+                    label={d.label}
+                    selected={d.id === durationId}
+                    onPress={() => setDurationId(d.id)}
+                  />
+                ))}
+              </View>
+            </Field>
+          </>
         )}
 
-        <Field label={t("book.property")}>
-          <View style={styles.chipsWrap}>
-            {myProperties.map((p) => (
-              <Chip
-                key={p.id}
-                label={p.name}
-                hint={p.address}
-                selected={p.id === propertyId}
-                onPress={() => pickProperty(p.id)}
-              />
-            ))}
-          </View>
-        </Field>
-
-        <Field label={t("book.date")}>
-          <View style={styles.chipsWrap}>
-            {DATE_OPTIONS.map((d) => (
-              <Chip
-                key={d.id}
-                label={t(`book.dates.${d.id}` as MessageKey)}
-                selected={d.id === dateId}
-                onPress={() => setDateId(d.id)}
-              />
-            ))}
-          </View>
-        </Field>
-
-        <Field label={t("book.time")}>
-          <View style={styles.chipsWrap}>
-            {TIME_OPTIONS.map((opt) => (
-              <Chip
-                key={opt.id}
-                label={t(`book.times.${opt.id}` as MessageKey)}
-                hint={t(`book.times.${opt.id}-hint` as MessageKey)}
-                selected={opt.id === timeId}
-                onPress={() => setTimeId(opt.id)}
-              />
-            ))}
-          </View>
-        </Field>
-
-        <Field label={t("book.duration")}>
-          <View style={styles.chipsWrap}>
-            {DURATION_OPTIONS.map((d) => (
-              <Chip
-                key={d.id}
-                label={d.label}
-                selected={d.id === durationId}
-                onPress={() => setDurationId(d.id)}
-              />
-            ))}
-          </View>
-        </Field>
-
-        <Field label={t("book.cleaner")}>
-          <View style={styles.chipsWrap}>
-            {professionals.map((p) => (
-              <CleanerChip
-                key={p.id}
-                pro={p}
-                selected={p.id === cleanerId}
-                onPress={() => setCleanerId(p.id)}
-              />
-            ))}
-          </View>
-        </Field>
-
-        <Field label={t("book.reviewer")}>
-          <View style={styles.chipsWrap}>
-            {reviewers.map((r) => (
-              <Chip
-                key={r.id}
-                label={r.name}
-                hint={`★ ${r.rating.toFixed(1)}`}
-                selected={r.id === reviewerId}
-                onPress={() => setReviewerId(r.id)}
-              />
-            ))}
-          </View>
-        </Field>
-
-        <Field label={t("book.notes")}>
-          <TextInput
-            value={notes}
-            onChangeText={setNotes}
-            placeholder={t("property.notesPlaceholder")}
-            placeholderTextColor={colors.text + "80"}
-            multiline
-            numberOfLines={3}
-            style={[
-              styles.input,
-              styles.multiline,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
-          />
-        </Field>
-
-        {property && (
-          <View
-            style={[
-              styles.summary,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <Text style={[styles.summaryTitle, { color: colors.text }]}>
-              {property.name}
-            </Text>
-            <Text style={[styles.summaryAddress, { color: colors.text }]}>
-              {property.address}
-            </Text>
-            <Text style={[styles.summaryWindow, { color: BRAND }]}>
-              {formatJobWindow(scheduledWindow.startISO, scheduledWindow.endISO)}
-            </Text>
-            {cleaner && (
-              <View style={styles.summaryPriceRow}>
-                <Text style={[styles.summaryBreakdown, { color: colors.text }]}>
-                  {formatRatePerHour(cleaner.hourlyRate)} · {formatHours(hours)}
-                </Text>
-                <Text style={[styles.summaryPriceTotal, { color: BRAND }]}>
-                  {formatPrice(priceCents)}
+        {step === 2 && (
+          <>
+            {preselectedPro && (
+              <View style={[styles.proBanner, { backgroundColor: BRAND_LIGHT }]}>
+                <Ionicons name="person-circle" size={20} color={BRAND} />
+                <Text style={styles.proBannerText}>
+                  {t("book.preselected", { name: preselectedPro.name })}
                 </Text>
               </View>
             )}
-          </View>
+            <Field label={t("book.cleaner")}>
+              <View style={styles.chipsWrap}>
+                {professionals.map((p) => (
+                  <CleanerChip
+                    key={p.id}
+                    pro={p}
+                    selected={p.id === cleanerId}
+                    onPress={() => setCleanerId(p.id)}
+                  />
+                ))}
+              </View>
+            </Field>
+
+            <Field label={t("book.reviewer")}>
+              <View style={styles.chipsWrap}>
+                {reviewers.map((r) => (
+                  <Chip
+                    key={r.id}
+                    label={r.name}
+                    hint={`★ ${r.rating.toFixed(1)}`}
+                    selected={r.id === reviewerId}
+                    onPress={() => setReviewerId(r.id)}
+                  />
+                ))}
+              </View>
+            </Field>
+          </>
         )}
 
-        <Pressable
-          onPress={handleConfirm}
-          disabled={!isBooker}
-          style={({ pressed }) => [
-            styles.confirm,
-            {
-              backgroundColor: isBooker ? BRAND : colors.border,
-              opacity: pressed && isBooker ? 0.85 : 1,
-            },
-          ]}
-        >
-          <Text style={styles.confirmText}>
-            {isBooker ? t("book.confirm") : t("book.switchToBook")}
-          </Text>
-        </Pressable>
+        {step === 3 && (
+          <>
+            <Text style={[styles.stepHelp, { color: colors.text }]}>
+              {t("book.wizard.reviewHelp")}
+            </Text>
+            <Field label={t("book.notes")}>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder={t("property.notesPlaceholder")}
+                placeholderTextColor={colors.text + "80"}
+                multiline
+                numberOfLines={3}
+                style={[
+                  styles.input,
+                  styles.multiline,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
+              />
+            </Field>
+
+            {property && (
+              <View
+                style={[
+                  styles.summary,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.summaryTitle, { color: colors.text }]}>
+                  {property.name}
+                </Text>
+                <Text style={[styles.summaryAddress, { color: colors.text }]}>
+                  {property.address}
+                </Text>
+                <Text style={[styles.summaryWindow, { color: BRAND }]}>
+                  {formatJobWindow(
+                    scheduledWindow.startISO,
+                    scheduledWindow.endISO
+                  )}
+                </Text>
+                <Text style={[styles.summaryAssigned, { color: colors.text }]}>
+                  {t("job.cleanerLabel", { name: cleaner?.name ?? "—" })}
+                </Text>
+                <Text style={[styles.summaryAssigned, { color: colors.text }]}>
+                  {t("job.reviewerLabel", { name: reviewer?.name ?? "—" })}
+                </Text>
+                {cleaner && (
+                  <View style={styles.summaryPriceRow}>
+                    <Text
+                      style={[styles.summaryBreakdown, { color: colors.text }]}
+                    >
+                      {formatRatePerHour(cleaner.hourlyRate)} ·{" "}
+                      {formatHours(hours)}
+                    </Text>
+                    <Text style={[styles.summaryPriceTotal, { color: BRAND }]}>
+                      {formatPrice(priceCents)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
+
+      <View
+        style={[
+          styles.footer,
+          {
+            borderColor: colors.border,
+            backgroundColor: colors.background,
+          },
+        ]}
+      >
+        {step > 1 ? (
+          <Pressable
+            onPress={goBack}
+            style={({ pressed }) => [
+              styles.footerBtn,
+              styles.footerBtnSecondary,
+              { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Ionicons name="chevron-back" size={18} color={colors.text} />
+            <Text style={[styles.footerBtnText, { color: colors.text }]}>
+              {t("book.wizard.back")}
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={styles.footerSpacer} />
+        )}
+
+        {step < TOTAL_STEPS ? (
+          <Pressable
+            onPress={goNext}
+            style={({ pressed }) => [
+              styles.footerBtn,
+              styles.footerBtnPrimary,
+              { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Text style={[styles.footerBtnText, { color: "white" }]}>
+              {t("book.wizard.next")}
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color="white" />
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={handleConfirm}
+            disabled={!isBooker}
+            style={({ pressed }) => [
+              styles.footerBtn,
+              styles.footerBtnPrimary,
+              {
+                backgroundColor: isBooker ? BRAND : colors.border,
+                opacity: pressed && isBooker ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text style={[styles.footerBtnText, { color: "white" }]}>
+              {isBooker ? t("book.confirm") : t("book.switchToBook")}
+            </Text>
+          </Pressable>
+        )}
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -488,7 +598,25 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 16, paddingBottom: 40, gap: 18 },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 10,
+  },
+  progressBar: { flexDirection: "row", gap: 4 },
+  progressSegment: { flex: 1, height: 4, borderRadius: 2 },
+  stepCount: {
+    fontSize: 12,
+    opacity: 0.6,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  stepTitle: { fontSize: 22, fontWeight: "700" },
+  stepHelp: { fontSize: 14, opacity: 0.7, lineHeight: 20 },
+  content: { padding: 16, paddingBottom: 32, gap: 18 },
   roleBanner: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -523,15 +651,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
   },
-  addressRow: { flexDirection: "row", alignItems: "stretch", gap: 8 },
-  addressInput: { flex: 1 },
-  mapBtn: {
-    width: 48,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   multiline: { minHeight: 80, textAlignVertical: "top" },
   summary: {
     borderRadius: 14,
@@ -542,6 +661,7 @@ const styles = StyleSheet.create({
   summaryTitle: { fontSize: 16, fontWeight: "700" },
   summaryAddress: { fontSize: 14, opacity: 0.75 },
   summaryWindow: { fontSize: 13, fontWeight: "600", marginTop: 4 },
+  summaryAssigned: { fontSize: 13, opacity: 0.8 },
   summaryPriceRow: {
     flexDirection: "row",
     alignItems: "baseline",
@@ -550,6 +670,29 @@ const styles = StyleSheet.create({
   },
   summaryBreakdown: { fontSize: 13, opacity: 0.75 },
   summaryPriceTotal: { fontSize: 22, fontWeight: "700" },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  footerSpacer: { flex: 0.4 },
+  footerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 6,
+  },
+  footerBtnSecondary: {
+    flex: 0.4,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  footerBtnPrimary: { flex: 0.6 },
+  footerBtnText: { fontSize: 15, fontWeight: "700" },
   confirm: {
     paddingVertical: 16,
     borderRadius: 14,

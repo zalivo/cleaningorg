@@ -82,6 +82,15 @@ export const en = {
       "afternoon-hint": "12pm – 5pm",
       "evening-hint": "5pm – 9pm",
     },
+    wizard: {
+      stepWhereWhen: "Where & When",
+      stepWho: "Who",
+      stepReview: "Review",
+      stepCount: "Step {current} of {total}",
+      next: "Next",
+      back: "Back",
+      reviewHelp: "Add a note for the team if helpful, then confirm.",
+    },
     alerts: {
       addressRequired: "Address required",
       addressBody: "Please enter the address for the cleaning.",
