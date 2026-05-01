@@ -27,6 +27,13 @@ export const en = {
     bookSmall: "Book",
     emptyTitle: "No properties yet",
     emptyBody: "Add a property to start booking cleanings.",
+    propertyFooter: {
+      zeroCleans: "No cleans yet",
+      oneClean: "1 clean",
+      manyCleans: "{count} cleans",
+      lastCleaned: "last {date}",
+      avgRating: "avg ★{rating}",
+    },
     benefits: {
       title: "Why CleaningOrg?",
       verified: "Verified, background-checked pros",
@@ -62,6 +69,10 @@ export const en = {
       edit: "Edit {name}",
       delete: "Delete {name}",
       openInMaps: "Open {address} in maps",
+    },
+    history: {
+      title: "Bookings",
+      empty: "No bookings yet for this property.",
     },
     alerts: {
       nameRequired: "Name required",

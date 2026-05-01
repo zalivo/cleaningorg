@@ -26,6 +26,13 @@ export const cs: LocaleMessages = {
     bookSmall: "Objednat",
     emptyTitle: "Zatím žádné nemovitosti",
     emptyBody: "Přidej nemovitost a začni objednávat úklid.",
+    propertyFooter: {
+      zeroCleans: "Zatím žádné úklidy",
+      oneClean: "1 úklid",
+      manyCleans: "{count} úklidů",
+      lastCleaned: "naposledy {date}",
+      avgRating: "průměr ★{rating}",
+    },
     benefits: {
       title: "Proč CleaningOrg?",
       verified: "Ověření profesionálové s prověřením",
@@ -61,6 +68,10 @@ export const cs: LocaleMessages = {
       edit: "Upravit {name}",
       delete: "Smazat {name}",
       openInMaps: "Otevřít {address} v mapách",
+    },
+    history: {
+      title: "Rezervace",
+      empty: "Pro tuto nemovitost zatím žádné rezervace.",
     },
     alerts: {
       nameRequired: "Vyžadován název",
