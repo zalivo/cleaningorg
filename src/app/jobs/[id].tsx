@@ -271,6 +271,7 @@ export default function JobDetailRoute() {
               disabled={!hasPhotoEvidence}
               onPress={() => {
                 finishCleaning(jobId);
+                useCelebrateStore.getState().trigger("cleanDone");
                 router.back();
               }}
               style={({ pressed }) => [
@@ -316,7 +317,7 @@ export default function JobDetailRoute() {
           <Pressable
             onPress={() => {
               approve(jobId);
-              useCelebrateStore.getState().triggerOnce();
+              useCelebrateStore.getState().trigger("approve");
               router.back();
             }}
             style={({ pressed }) => [

@@ -31,6 +31,7 @@ import {
 } from "@/data/professionals";
 import { getReviewer, reviewers } from "@/data/reviewers";
 import { type MessageKey, useT } from "@/lib/i18n";
+import { useCelebrateStore } from "@/store/celebrate";
 import { useActiveIdentity } from "@/store/identity";
 import { useJobsStore } from "@/store/jobs";
 import { usePropertiesForOwner, useProperty } from "@/store/properties";
@@ -266,6 +267,7 @@ export default function BookRoute() {
       notes: notes.trim() || undefined,
     });
 
+    useCelebrateStore.getState().trigger("booking");
     router.replace("/(tabs)/jobs");
   };
 

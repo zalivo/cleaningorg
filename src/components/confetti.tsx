@@ -6,7 +6,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { useCelebrateStore } from "@/store/celebrate";
+import { type CelebrateKind, useCelebrateStore } from "@/store/celebrate";
 
 const COLORS = [
   "#F59E0B",
@@ -16,19 +16,31 @@ const COLORS = [
   "#8B5CF6",
   "#EF4444",
 ];
+
+const EMOJI_PALETTES: Record<Exclude<CelebrateKind, "confetti">, string[]> = {
+  booking: ["🎉", "✨", "📅", "🥳"],
+  cleanDone: ["🧹", "✨", "🫧", "💫"],
+  approve: ["✅", "⭐", "🎊", "🎉"],
+};
+
 const COUNT = 30;
 
 interface Particle {
   startX: number;
-  color: string;
+  /** Either a hex color (rectangle mode) or an emoji string (text mode). */
+  symbol: string;
+  isEmoji: boolean;
   durationMs: number;
   rotateEnd: number;
 }
 
-function makeParticles(width: number): Particle[] {
+function makeParticles(width: number, kind: CelebrateKind): Particle[] {
+  const isEmoji = kind !== "confetti";
+  const palette: string[] = isEmoji ? EMOJI_PALETTES[kind] : COLORS;
   return Array.from({ length: COUNT }, () => ({
     startX: Math.random() * width,
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    symbol: palette[Math.floor(Math.random() * palette.length)],
+    isEmoji,
     durationMs: 1500 + Math.random() * 700,
     rotateEnd: 360 + Math.random() * 720,
   }));
@@ -36,19 +48,28 @@ function makeParticles(width: number): Particle[] {
 
 export function Confetti() {
   const active = useCelebrateStore((s) => s.active);
+  const triggerCount = useCelebrateStore((s) => s.triggerCount);
+  const kind = useCelebrateStore((s) => s.kind);
   const dismiss = useCelebrateStore((s) => s.dismiss);
   const { width, height } = Dimensions.get("window");
-  const particles = useMemo(() => makeParticles(width), [width, active]);
+  // Recompute particles on each trigger so back-to-back celebrations get
+  // fresh randomness, not the same fall pattern.
+  const particles = useMemo(
+    () => makeParticles(width, kind),
+    [width, triggerCount, kind]
+  );
 
   useEffect(() => {
     if (!active) return;
     const t = setTimeout(dismiss, 2200);
     return () => clearTimeout(t);
-  }, [active, dismiss]);
+  }, [active, triggerCount, dismiss]);
 
   if (!active) return null;
   return (
-    <View pointerEvents="none" style={styles.root}>
+    // key={triggerCount} forces a full remount of the particle subtree on
+    // each new trigger so each particle's onMount animation re-fires.
+    <View key={triggerCount} pointerEvents="none" style={styles.root}>
       {particles.map((p, i) => (
         <ConfettiParticle key={i} {...p} screenHeight={height} />
       ))}
@@ -58,7 +79,8 @@ export function Confetti() {
 
 function ConfettiParticle({
   startX,
-  color,
+  symbol,
+  isEmoji,
   durationMs,
   rotateEnd,
   screenHeight,
@@ -81,6 +103,24 @@ function ConfettiParticle({
     transform: [{ translateY: y.value }, { rotate: `${rot.value}deg` }],
   }));
 
+  if (isEmoji) {
+    return (
+      <Animated.Text
+        style={[
+          {
+            position: "absolute",
+            left: startX,
+            top: 0,
+            fontSize: 26,
+          },
+          style,
+        ]}
+      >
+        {symbol}
+      </Animated.Text>
+    );
+  }
+
   return (
     <Animated.View
       style={[
@@ -91,7 +131,7 @@ function ConfettiParticle({
           width: 10,
           height: 14,
           borderRadius: 2,
-          backgroundColor: color,
+          backgroundColor: symbol,
         },
         style,
       ]}

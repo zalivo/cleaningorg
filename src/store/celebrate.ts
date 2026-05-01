@@ -1,18 +1,26 @@
 import { create } from "zustand";
 
+export type CelebrateKind = "confetti" | "booking" | "cleanDone" | "approve";
+
 interface CelebrateState {
   active: boolean;
-  alreadyCelebrated: boolean;
-  triggerOnce: () => void;
+  /** Increments on every trigger so the Confetti component can remount its
+   *  particle subtree and replay the animation even mid-flight. */
+  triggerCount: number;
+  kind: CelebrateKind;
+  trigger: (kind?: CelebrateKind) => void;
   dismiss: () => void;
 }
 
-export const useCelebrateStore = create<CelebrateState>((set, get) => ({
+export const useCelebrateStore = create<CelebrateState>((set) => ({
   active: false,
-  alreadyCelebrated: false,
-  triggerOnce: () => {
-    if (get().alreadyCelebrated) return;
-    set({ active: true, alreadyCelebrated: true });
-  },
+  triggerCount: 0,
+  kind: "confetti",
+  trigger: (kind: CelebrateKind = "confetti") =>
+    set((s) => ({
+      active: true,
+      triggerCount: s.triggerCount + 1,
+      kind,
+    })),
   dismiss: () => set({ active: false }),
 }));
