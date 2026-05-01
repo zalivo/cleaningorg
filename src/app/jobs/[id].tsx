@@ -233,17 +233,25 @@ export default function JobDetailRoute() {
         ) : (
           <>
             <Row
-              icon="cash-outline"
-              text={t("job.total", { price: formatPrice(job.priceCents) })}
+              icon="person-circle-outline"
+              text={t("job.cleanerPayLabel", {
+                price: formatPrice(
+                  job.priceCents - (job.reviewerFeeCents ?? 0),
+                ),
+              })}
             />
             {job.reviewerFeeCents !== undefined && job.reviewerFeeCents > 0 && (
               <Row
-                icon="document-text-outline"
+                icon="shield-checkmark-outline"
                 text={t("job.reviewerFeeLabel", {
                   price: formatPrice(job.reviewerFeeCents),
                 })}
               />
             )}
+            <Row
+              icon="cash-outline"
+              text={t("job.total", { price: formatPrice(job.priceCents) })}
+            />
           </>
         )}
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
