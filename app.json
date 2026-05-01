@@ -22,6 +22,12 @@
       "expo-router",
       "expo-web-browser",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow CleaningOrg to access your photos so cleaners and reviewers can attach images to job notes."
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {
