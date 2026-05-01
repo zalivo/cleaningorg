@@ -1,13 +1,15 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProAvatar } from "@/components/pro-avatar";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { identities, type Role } from "@/data/identities";
 import { useT } from "@/lib/i18n";
 import { useActiveIdentity, useIdentityStore } from "@/store/identity";
+import { useJobsStore } from "@/store/jobs";
+import { usePropertiesStore } from "@/store/properties";
 
 /**
  * A persistent demo-only "logged in as" header, mounted at the root of
@@ -22,6 +24,8 @@ export function DemoIdentityDock() {
   const t = useT();
   const identity = useActiveIdentity();
   const setActive = useIdentityStore((s) => s.setActiveIdentity);
+  const resetJobs = useJobsStore((s) => s.resetDemo);
+  const resetProperties = usePropertiesStore((s) => s.resetDemo);
   const [open, setOpen] = useState(false);
 
   const roleLabel: Record<Role, string> = {
@@ -33,6 +37,26 @@ export function DemoIdentityDock() {
   function pick(id: string) {
     setActive(id);
     setOpen(false);
+  }
+
+  function confirmReset() {
+    const ok = () => {
+      resetJobs();
+      resetProperties();
+      setOpen(false);
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(t("profile.resetTitle"))) ok();
+    } else {
+      Alert.alert(
+        t("profile.resetTitle"),
+        t("profile.resetBody"),
+        [
+          { text: t("profile.resetKeep"), style: "cancel" },
+          { text: t("profile.resetConfirm"), style: "destructive", onPress: ok },
+        ]
+      );
+    }
   }
 
   return (
@@ -124,6 +148,25 @@ export function DemoIdentityDock() {
                 </Pressable>
               );
             })}
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <Pressable
+              onPress={confirmReset}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.row,
+                styles.resetRow,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons
+                name="refresh-outline"
+                size={20}
+                color={colors.text}
+              />
+              <Text style={[styles.resetText, { color: colors.text }]}>
+                {t("profile.reset")}
+              </Text>
+            </Pressable>
           </View>
         )}
       </View>
@@ -165,4 +208,7 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 14, fontWeight: "600" },
   role: { fontSize: 11, fontWeight: "600" },
+  divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 12 },
+  resetRow: { gap: 12 },
+  resetText: { fontSize: 14, fontWeight: "600" },
 });

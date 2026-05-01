@@ -131,6 +131,8 @@ export const en = {
     declinedBanner: "Declined {count}× — last reason: {reason}",
     declinedShort: "Declined {count}× — {reason}",
     cleanedShort: "Re-cleaned {count}×",
+    scheduledLine: "Scheduled: {window}",
+    actualLine: "Actual: {window}",
     started: "Started: {when}",
     total: "Total: {price}",
     totalLabel: "Total",

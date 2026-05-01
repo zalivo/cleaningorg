@@ -1,4 +1,3 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 import {
   View,
@@ -6,30 +5,23 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Alert,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProAvatar } from "@/components/pro-avatar";
 import { BRAND } from "@/constants/colors";
-import { identities, type Role } from "@/data/identities";
+import type { Role } from "@/data/identities";
 import { formatPrice } from "@/data/jobs";
 import { SUPPORTED_LOCALES, useLocaleStore, useT } from "@/lib/i18n";
-import { useActiveIdentity, useIdentityStore } from "@/store/identity";
+import { useActiveIdentity } from "@/store/identity";
 import {
   useBookerSpend,
   useCleanerEarnings,
-  useJobsStore,
   useReviewerEarnings,
 } from "@/store/jobs";
-import { usePropertiesStore } from "@/store/properties";
 
 export default function ProfileRoute() {
   const { colors } = useTheme();
   const identity = useActiveIdentity();
-  const setActive = useIdentityStore((s) => s.setActiveIdentity);
-  const resetJobs = useJobsStore((s) => s.resetDemo);
-  const resetProperties = usePropertiesStore((s) => s.resetDemo);
   const t = useT();
   const locale = useLocaleStore((s) => s.locale);
   const setLocale = useLocaleStore((s) => s.setLocale);
@@ -65,25 +57,6 @@ export default function ProfileRoute() {
         : totals.jobCount === 1
           ? t("profile.totals.acrossOne")
           : t("profile.totals.acrossMany", { count: totals.jobCount });
-
-  function confirmReset() {
-    const ok = () => {
-      resetJobs();
-      resetProperties();
-    };
-    if (Platform.OS === "web") {
-      if (window.confirm(t("profile.resetTitle"))) ok();
-    } else {
-      Alert.alert(
-        t("profile.resetTitle"),
-        t("profile.resetBody"),
-        [
-          { text: t("profile.resetKeep"), style: "cancel" },
-          { text: t("profile.resetConfirm"), style: "destructive", onPress: ok },
-        ]
-      );
-    }
-  }
 
   return (
     <SafeAreaView
@@ -159,61 +132,6 @@ export default function ProfileRoute() {
           })}
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {t("profile.sectionIdentity")}
-          </Text>
-          <Text style={[styles.sectionHint, { color: colors.text }]}>
-            {t("profile.identityHint")}
-          </Text>
-        </View>
-        <View style={styles.identityList}>
-          {identities.map((i) => {
-            const active = i.id === identity.id;
-            return (
-              <Pressable
-                key={i.id}
-                onPress={() => setActive(i.id)}
-                style={({ pressed }) => [
-                  styles.identityCard,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: active ? BRAND : colors.border,
-                    borderWidth: active ? 2 : StyleSheet.hairlineWidth,
-                    opacity: pressed ? 0.8 : 1,
-                  },
-                ]}
-              >
-                <ProAvatar name={i.name} color={i.avatarColor} size={40} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.identityName, { color: colors.text }]}>
-                    {i.name}
-                  </Text>
-                  <Text style={[styles.identityRole, { color: colors.text }]}>
-                    {ROLE_LABEL[i.role]} · {i.email}
-                  </Text>
-                </View>
-                {active && (
-                  <Ionicons name="checkmark-circle" size={22} color={BRAND} />
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Pressable
-          onPress={confirmReset}
-          style={({ pressed }) => [
-            styles.reset,
-            { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
-          ]}
-        >
-          <Ionicons name="refresh-outline" size={18} color={colors.text} />
-          <Text style={[styles.resetText, { color: colors.text }]}>
-            {t("profile.reset")}
-          </Text>
-        </Pressable>
-
         <Text style={[styles.version, { color: colors.text }]}>
           {t("profile.version")}
         </Text>
@@ -248,7 +166,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     letterSpacing: 0.5,
   },
-  sectionHint: { fontSize: 13, opacity: 0.65 },
   totalsCard: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 14,
@@ -264,26 +181,6 @@ const styles = StyleSheet.create({
   },
   totalsValue: { fontSize: 30, fontWeight: "700" },
   totalsSub: { fontSize: 13, opacity: 0.7 },
-  identityList: { gap: 10 },
-  identityCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderRadius: 14,
-  },
-  identityName: { fontSize: 15, fontWeight: "600" },
-  identityRole: { fontSize: 12, opacity: 0.7, marginTop: 2 },
-  reset: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  resetText: { fontSize: 15, fontWeight: "600" },
   version: { fontSize: 12, opacity: 0.5, textAlign: "center", marginTop: 8 },
   localeRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   localeChip: {

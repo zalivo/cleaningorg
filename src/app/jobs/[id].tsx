@@ -72,7 +72,9 @@ export default function JobDetailRoute() {
   // Localized "actual" timing line — null when no actual times stamped yet.
   const actual: string | null =
     job.actualStart && job.actualEnd
-      ? formatJobWindow(job.actualStart, job.actualEnd)
+      ? t("job.actualLine", {
+          window: formatJobWindow(job.actualStart, job.actualEnd),
+        })
       : job.actualStart
         ? t("job.started", { when: formatJobDate(job.actualStart) })
         : null;
@@ -188,7 +190,9 @@ export default function JobDetailRoute() {
         />
         <Row
           icon="calendar-outline"
-          text={formatJobWindow(job.scheduledStart, job.scheduledEnd)}
+          text={t("job.scheduledLine", {
+            window: formatJobWindow(job.scheduledStart, job.scheduledEnd),
+          })}
         />
         {late && (
           <View style={styles.lateNote}>

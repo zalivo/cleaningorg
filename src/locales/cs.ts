@@ -130,6 +130,8 @@ export const cs: LocaleMessages = {
     declinedBanner: "Zamítnuto {count}× — poslední důvod: {reason}",
     declinedShort: "Zamítnuto {count}× — {reason}",
     cleanedShort: "Předěláno {count}×",
+    scheduledLine: "Plán: {window}",
+    actualLine: "Skutečnost: {window}",
     started: "Začátek: {when}",
     total: "Celkem: {price}",
     totalLabel: "Celkem",

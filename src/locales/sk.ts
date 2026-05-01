@@ -130,6 +130,8 @@ export const sk: LocaleMessages = {
     declinedBanner: "Zamietnuté {count}× — posledný dôvod: {reason}",
     declinedShort: "Zamietnuté {count}× — {reason}",
     cleanedShort: "Prerobené {count}×",
+    scheduledLine: "Plán: {window}",
+    actualLine: "Skutočnosť: {window}",
     started: "Začiatok: {when}",
     total: "Spolu: {price}",
     totalLabel: "Spolu",
