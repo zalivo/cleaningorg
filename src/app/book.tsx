@@ -11,10 +11,11 @@ import {
   TextInput,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { getProfessional, professionals } from "@/data/professionals";
-import { reviewers } from "@/data/reviewers";
+import { getReviewer, reviewers } from "@/data/reviewers";
 import { type ServiceId, services } from "@/data/services";
 import { useActiveIdentity } from "@/store/identity";
 import { useJobsStore } from "@/store/jobs";
@@ -56,9 +57,8 @@ export default function BookRoute() {
   const identity = useActiveIdentity();
   const bookJob = useJobsStore((s) => s.bookJob);
 
-  const initialService = params.serviceId
-    ? (params.serviceId as ServiceId)
-    : services[0].id;
+  const initialService: ServiceId =
+    services.find((s) => s.id === params.serviceId)?.id ?? services[0].id;
   const preselectedPro = params.proId ? getProfessional(params.proId) : undefined;
 
   const [serviceId, setServiceId] = useState<ServiceId>(initialService);
@@ -71,10 +71,20 @@ export default function BookRoute() {
   );
   const [reviewerId, setReviewerId] = useState<string>(reviewers[0].id);
 
-  const service = services.find((s) => s.id === serviceId)!;
+  const service = services.find((s) => s.id === serviceId) ?? services[0];
+  const isBooker = identity.role === "booker";
 
   const handleConfirm = () => {
-    if (!address.trim()) {
+    if (!isBooker) {
+      // Defense-in-depth: the Confirm button is disabled in this state.
+      notify(
+        "Switch to booker",
+        "Only the booker identity can create new bookings. Switch from the Profile tab."
+      );
+      return;
+    }
+    const trimmedAddress = address.trim();
+    if (!trimmedAddress) {
       notify("Address required", "Please enter the address for the cleaning.");
       return;
     }
@@ -86,16 +96,9 @@ export default function BookRoute() {
       notify("Reviewer required", "Please pick a reviewer.");
       return;
     }
-    if (identity.role !== "booker") {
-      notify(
-        "Switch to booker",
-        "Only the booker identity can create new bookings. Switch from the Profile tab."
-      );
-      return;
-    }
 
     const cleaner = getProfessional(cleanerId);
-    const reviewer = reviewers.find((r) => r.id === reviewerId);
+    const reviewer = getReviewer(reviewerId);
     if (!cleaner || !reviewer) {
       notify("Booking failed", "Selected cleaner or reviewer no longer exists.");
       return;
@@ -109,7 +112,7 @@ export default function BookRoute() {
       reviewerId: reviewer.id,
       reviewerName: reviewer.name,
       date: resolveDate(dateId, timeId),
-      address: address.trim(),
+      address: trimmedAddress,
       notes: notes.trim() || undefined,
     });
 
@@ -117,171 +120,197 @@ export default function BookRoute() {
   };
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={styles.content}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {preselectedPro && (
-        <View style={[styles.proBanner, { backgroundColor: BRAND_LIGHT }]}>
-          <Ionicons name="person-circle" size={20} color={BRAND} />
-          <Text style={styles.proBannerText}>
-            Pre-selected:{" "}
-            <Text style={{ fontWeight: "700" }}>{preselectedPro.name}</Text>
-          </Text>
-        </View>
-      )}
-
-      <Field label="Service">
-        <View style={styles.chipsWrap}>
-          {services.map((s) => (
-            <Chip
-              key={s.id}
-              label={s.name}
-              selected={s.id === serviceId}
-              onPress={() => setServiceId(s.id)}
-            />
-          ))}
-        </View>
-      </Field>
-
-      <Field label="Date">
-        <View style={styles.chipsWrap}>
-          {DATE_OPTIONS.map((d) => (
-            <Chip
-              key={d.id}
-              label={d.label}
-              selected={d.id === dateId}
-              onPress={() => setDateId(d.id)}
-            />
-          ))}
-        </View>
-      </Field>
-
-      <Field label="Time">
-        <View style={styles.chipsWrap}>
-          {TIME_OPTIONS.map((t) => (
-            <Chip
-              key={t.id}
-              label={t.label}
-              hint={t.hint}
-              selected={t.id === timeId}
-              onPress={() => setTimeId(t.id)}
-            />
-          ))}
-        </View>
-      </Field>
-
-      <Field label="Address">
-        <TextInput
-          value={address}
-          onChangeText={setAddress}
-          placeholder="123 Main St, Apt 4"
-          placeholderTextColor={colors.text + "80"}
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              color: colors.text,
-            },
-          ]}
-        />
-      </Field>
-
-      <Field label="Cleaner">
-        <View style={styles.chipsWrap}>
-          {professionals.map((p) => (
-            <Chip
-              key={p.id}
-              label={p.name}
-              hint={`★ ${p.rating.toFixed(1)}`}
-              selected={p.id === cleanerId}
-              onPress={() => setCleanerId(p.id)}
-            />
-          ))}
-        </View>
-      </Field>
-
-      <Field label="Reviewer">
-        <View style={styles.chipsWrap}>
-          {reviewers.map((r) => (
-            <Chip
-              key={r.id}
-              label={r.name}
-              hint={`★ ${r.rating.toFixed(1)}`}
-              selected={r.id === reviewerId}
-              onPress={() => setReviewerId(r.id)}
-            />
-          ))}
-        </View>
-      </Field>
-
-      <Field label="Notes (optional)">
-        <TextInput
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Gate code, parking, pets, etc."
-          placeholderTextColor={colors.text + "80"}
-          multiline
-          numberOfLines={3}
-          style={[
-            styles.input,
-            styles.multiline,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              color: colors.text,
-            },
-          ]}
-        />
-      </Field>
-
-      <View
-        style={[
-          styles.summary,
-          { backgroundColor: colors.card, borderColor: colors.border },
-        ]}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.summaryRow}>
-          <Text style={[styles.summaryLabel, { color: colors.text }]}>
-            {service.name}
-          </Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>
-            ${service.price}
-          </Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={[styles.summaryLabel, { color: colors.text }]}>
-            Estimated duration
-          </Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>
-            {service.durationHours}h
-          </Text>
-        </View>
+        {!isBooker && (
+          <View style={[styles.roleBanner, { backgroundColor: "#FEF3C7" }]}>
+            <Ionicons name="alert-circle" size={20} color="#92400E" />
+            <Text style={styles.roleBannerText}>
+              You're viewing as <Text style={{ fontWeight: "700" }}>{identity.name}</Text> ({identity.role}). Only the booker can create bookings — switch from the Profile tab.
+            </Text>
+          </View>
+        )}
+
+        {preselectedPro && (
+          <View style={[styles.proBanner, { backgroundColor: BRAND_LIGHT }]}>
+            <Ionicons name="person-circle" size={20} color={BRAND} />
+            <Text style={styles.proBannerText}>
+              Pre-selected:{" "}
+              <Text style={{ fontWeight: "700" }}>{preselectedPro.name}</Text>
+            </Text>
+          </View>
+        )}
+
+        <Field label="Service">
+          <View style={styles.chipsWrap}>
+            {services.map((s) => (
+              <Chip
+                key={s.id}
+                label={s.name}
+                selected={s.id === serviceId}
+                onPress={() => setServiceId(s.id)}
+              />
+            ))}
+          </View>
+        </Field>
+
+        <Field label="Date">
+          <View style={styles.chipsWrap}>
+            {DATE_OPTIONS.map((d) => (
+              <Chip
+                key={d.id}
+                label={d.label}
+                selected={d.id === dateId}
+                onPress={() => setDateId(d.id)}
+              />
+            ))}
+          </View>
+        </Field>
+
+        <Field label="Time">
+          <View style={styles.chipsWrap}>
+            {TIME_OPTIONS.map((t) => (
+              <Chip
+                key={t.id}
+                label={t.label}
+                hint={t.hint}
+                selected={t.id === timeId}
+                onPress={() => setTimeId(t.id)}
+              />
+            ))}
+          </View>
+        </Field>
+
+        <Field label="Address">
+          <TextInput
+            value={address}
+            onChangeText={setAddress}
+            placeholder="123 Main St, Apt 4"
+            placeholderTextColor={colors.text + "80"}
+            autoCapitalize="words"
+            autoComplete="street-address"
+            textContentType="fullStreetAddress"
+            returnKeyType="done"
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
+          />
+        </Field>
+
+        <Field label="Cleaner">
+          <View style={styles.chipsWrap}>
+            {professionals.map((p) => (
+              <Chip
+                key={p.id}
+                label={p.name}
+                hint={`★ ${p.rating.toFixed(1)}`}
+                selected={p.id === cleanerId}
+                onPress={() => setCleanerId(p.id)}
+              />
+            ))}
+          </View>
+        </Field>
+
+        <Field label="Reviewer">
+          <View style={styles.chipsWrap}>
+            {reviewers.map((r) => (
+              <Chip
+                key={r.id}
+                label={r.name}
+                hint={`★ ${r.rating.toFixed(1)}`}
+                selected={r.id === reviewerId}
+                onPress={() => setReviewerId(r.id)}
+              />
+            ))}
+          </View>
+        </Field>
+
+        <Field label="Notes (optional)">
+          <TextInput
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Gate code, parking, pets, etc."
+            placeholderTextColor={colors.text + "80"}
+            multiline
+            numberOfLines={3}
+            style={[
+              styles.input,
+              styles.multiline,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
+          />
+        </Field>
+
         <View
           style={[
-            styles.summaryRow,
-            styles.summaryTotal,
-            { borderTopColor: colors.border },
+            styles.summary,
+            { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
-          <Text style={[styles.totalValue, { color: BRAND }]}>
-            ${service.price}
-          </Text>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: colors.text }]}>
+              {service.name}
+            </Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>
+              ${service.price}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: colors.text }]}>
+              Estimated duration
+            </Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>
+              {service.durationHours}h
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.summaryRow,
+              styles.summaryTotal,
+              { borderTopColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.totalLabel, { color: colors.text }]}>
+              Total
+            </Text>
+            <Text style={[styles.totalValue, { color: BRAND }]}>
+              ${service.price}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <Pressable
-        onPress={handleConfirm}
-        style={({ pressed }) => [
-          styles.confirm,
-          { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
-        ]}
-      >
-        <Text style={styles.confirmText}>Confirm Booking</Text>
-      </Pressable>
-    </ScrollView>
+        <Pressable
+          onPress={handleConfirm}
+          disabled={!isBooker}
+          style={({ pressed }) => [
+            styles.confirm,
+            {
+              backgroundColor: isBooker ? BRAND : colors.border,
+              opacity: pressed && isBooker ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Text style={styles.confirmText}>
+            {isBooker ? "Confirm Booking" : "Switch to booker to book"}
+          </Text>
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -349,6 +378,14 @@ function Chip({
 
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40, gap: 18 },
+  roleBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+  },
+  roleBannerText: { flex: 1, fontSize: 13, color: "#92400E", lineHeight: 18 },
   proBanner: {
     flexDirection: "row",
     alignItems: "center",
