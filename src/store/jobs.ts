@@ -147,7 +147,10 @@ export const useJobsStore = create<JobsState>()(
       resetDemo: () => set({ jobs: seedJobs }),
     }),
     {
-      name: "cleaningorg/jobs",
+      // v2 = property-based job model (was: service-based with totalPrice).
+      // Key bump is the simplest migration: orphans old payloads instead of
+      // hydrating malformed state into the new types.
+      name: "cleaningorg/jobs.v2",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
