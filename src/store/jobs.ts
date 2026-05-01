@@ -9,6 +9,7 @@ import {
   type Note,
   seedJobs,
 } from "@/data/jobs";
+import { useRatingsStore } from "@/store/ratings";
 
 const DEFAULT_ROOMS = [
   "Kitchen",
@@ -474,3 +475,104 @@ export function useBookerSpend(bookerId: string): RoleTotals {
 }
 
 export type { RoleTotals };
+
+// ---------------- Per-property cross-section ----------------
+
+export interface PropertyHistory {
+  /** Number of `done` jobs at this property. */
+  cleanCount: number;
+  /**
+   * ISO of when this property was last actually cleaned. Falls back to
+   * `scheduledEnd` if `actualEnd` wasn't stamped (older jobs). `null`
+   * when there are no completed jobs.
+   */
+  lastCleanedAt: string | null;
+  /** Number of unique cleaners across the property's done jobs. */
+  distinctCleaners: number;
+  /**
+   * Mean of all rating scores attached to this property's done jobs
+   * (booker→cleaner, reviewer→cleaner — both contribute). `null` when
+   * no ratings have been left yet, so the UI can omit the chip rather
+   * than render "★0.0".
+   */
+  averageRating: number | null;
+  /** Sum of `priceCents` across the property's done jobs. */
+  totalSpendCents: number;
+}
+
+/**
+ * Per-property aggregate of booking outcomes. Derived from `jobs` and
+ * `ratings`; no new persistent state. Returns zeroes / nulls for an
+ * unknown propertyId rather than `undefined` so callers can render
+ * unconditionally.
+ */
+export function usePropertyHistory(propertyId: string): PropertyHistory {
+  // First sub: just the done jobs that belong to this property.
+  const jobs = useJobsForPropertyDone(propertyId);
+
+  // Second sub: rating scores attached to those jobs. The set of jobIds
+  // changes only when the filtered list above changes, so the closure
+  // gets a fresh reference but `useShallow`'s element-wise compare keeps
+  // the result reference stable when nothing relevant has moved.
+  const jobIdSet = new Set(jobs.map((j) => j.id));
+  const ratingScores = useRatingsStore(
+    useShallow((s) =>
+      s.ratings.filter((r) => jobIdSet.has(r.jobId)).map((r) => r.score)
+    )
+  );
+
+  let lastTs = -Infinity;
+  let lastCleanedAt: string | null = null;
+  const cleanerIds = new Set<string>();
+  let totalSpendCents = 0;
+  for (const j of jobs) {
+    cleanerIds.add(j.cleanerId);
+    totalSpendCents += j.priceCents;
+    const stamp = j.actualEnd ?? j.scheduledEnd;
+    const ts = new Date(stamp).getTime();
+    if (Number.isFinite(ts) && ts > lastTs) {
+      lastTs = ts;
+      lastCleanedAt = stamp;
+    }
+  }
+
+  const averageRating =
+    ratingScores.length > 0
+      ? ratingScores.reduce((sum, n) => sum + n, 0) / ratingScores.length
+      : null;
+
+  return {
+    cleanCount: jobs.length,
+    lastCleanedAt,
+    distinctCleaners: cleanerIds.size,
+    averageRating,
+    totalSpendCents,
+  };
+}
+
+/** Shared between usePropertyHistory and any caller that wants just the done set. */
+function useJobsForPropertyDone(propertyId: string): Job[] {
+  return useJobsStore(
+    useShallow((s) =>
+      s.jobs.filter(
+        (j) => j.propertyId === propertyId && j.status === "done"
+      )
+    )
+  );
+}
+
+/**
+ * All non-cancelled jobs for a property (active + completed), most recent
+ * first. Used by the property detail screen's drill-in list. Cancelled
+ * bookings are filtered out — they aren't part of "what happened at this
+ * property" the way a completed clean is.
+ */
+export function useJobsForProperty(propertyId: string): Job[] {
+  return useJobsStore(
+    useShallow((s) =>
+      s.jobs
+        .filter((j) => j.propertyId === propertyId && j.status !== "cancelled")
+        .sort(byScheduleDesc)
+    )
+  );
+}

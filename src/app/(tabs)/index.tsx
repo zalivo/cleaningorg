@@ -17,7 +17,9 @@ import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { geocodeAddress } from "@/lib/geocode";
 import { useT } from "@/lib/i18n";
 import { useActiveIdentity } from "@/store/identity";
+import { type PropertyHistory, usePropertyHistory } from "@/store/jobs";
 import { usePropertiesForOwner, usePropertiesStore } from "@/store/properties";
+import type { Property } from "@/data/properties";
 
 export default function HomeRoute() {
   // ALL hooks must be called before any early return — switching identity
@@ -284,103 +286,29 @@ export default function HomeRoute() {
           ) : (
             <View style={{ gap: 10 }}>
               {properties.map((p) => (
-                <Pressable
+                <PropertyCard
                   key={p.id}
-                  onPress={() =>
+                  property={p}
+                  onOpen={() =>
                     router.push({
                       pathname: "/properties/[id]",
                       params: { id: p.id },
                     })
                   }
-                  accessibilityRole="link"
-                  accessibilityLabel={t("property.a11y.open", { name: p.name })}
-                  style={({ pressed }) => [
-                    styles.propertyCard,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.border,
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                >
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text
-                      style={[styles.propertyName, { color: colors.text }]}
-                      numberOfLines={1}
-                    >
-                      {p.name}
-                    </Text>
-                    <Text
-                      style={[styles.propertyAddress, { color: colors.text }]}
-                      numberOfLines={1}
-                    >
-                      {p.address}
-                    </Text>
-                    {p.notes && (
-                      <Text
-                        style={[styles.propertyNotes, { color: colors.text }]}
-                        numberOfLines={2}
-                      >
-                        {p.notes}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={{ gap: 6, alignItems: "flex-end" }}>
-                    <Pressable
-                      onPress={() =>
-                        router.push({
-                          pathname: "/book",
-                          params: { propertyId: p.id },
-                        })
-                      }
-                      style={({ pressed }) => [
-                        styles.bookSmall,
-                        { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
-                      ]}
-                    >
-                      <Text style={styles.bookSmallText}>{t("home.bookSmall")}</Text>
-                    </Pressable>
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      <Pressable
-                        onPress={() =>
-                          router.push({
-                            pathname: "/properties/[id]",
-                            params: { id: p.id, edit: "1" },
-                          })
-                        }
-                        accessibilityLabel={t("property.a11y.edit", {
-                          name: p.name,
-                        })}
-                        style={({ pressed }) => [
-                          styles.deleteSmall,
-                          { opacity: pressed ? 0.5 : 0.7 },
-                        ]}
-                      >
-                        <Ionicons
-                          name="create-outline"
-                          size={16}
-                          color={colors.text}
-                        />
-                      </Pressable>
-                      <Pressable
-                        onPress={() => confirmDelete(p.id, p.name)}
-                        accessibilityLabel={t("property.a11y.delete", {
-                          name: p.name,
-                        })}
-                        style={({ pressed }) => [
-                          styles.deleteSmall,
-                          { opacity: pressed ? 0.5 : 0.7 },
-                        ]}
-                      >
-                        <Ionicons
-                          name="trash-outline"
-                          size={16}
-                          color={colors.text}
-                        />
-                      </Pressable>
-                    </View>
-                  </View>
-                </Pressable>
+                  onBook={() =>
+                    router.push({
+                      pathname: "/book",
+                      params: { propertyId: p.id },
+                    })
+                  }
+                  onEdit={() =>
+                    router.push({
+                      pathname: "/properties/[id]",
+                      params: { id: p.id, edit: "1" },
+                    })
+                  }
+                  onDelete={() => confirmDelete(p.id, p.name)}
+                />
               ))}
             </View>
           )}
@@ -409,6 +337,148 @@ export default function HomeRoute() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function PropertyCard({
+  property,
+  onOpen,
+  onBook,
+  onEdit,
+  onDelete,
+}: {
+  property: Property;
+  onOpen: () => void;
+  onBook: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { colors } = useTheme();
+  const t = useT();
+  const history = usePropertyHistory(property.id);
+
+  return (
+    <Pressable
+      onPress={onOpen}
+      accessibilityRole="link"
+      accessibilityLabel={t("property.a11y.open", { name: property.name })}
+      style={({ pressed }) => [
+        styles.propertyCard,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          opacity: pressed ? 0.85 : 1,
+        },
+      ]}
+    >
+      <View style={styles.propertyCardRow}>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text
+            style={[styles.propertyName, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {property.name}
+          </Text>
+          <Text
+            style={[styles.propertyAddress, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {property.address}
+          </Text>
+          {property.notes && (
+            <Text
+              style={[styles.propertyNotes, { color: colors.text }]}
+              numberOfLines={2}
+            >
+              {property.notes}
+            </Text>
+          )}
+        </View>
+        <View style={{ gap: 6, alignItems: "flex-end" }}>
+          <Pressable
+            onPress={onBook}
+            style={({ pressed }) => [
+              styles.bookSmall,
+              { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Text style={styles.bookSmallText}>{t("home.bookSmall")}</Text>
+          </Pressable>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Pressable
+              onPress={onEdit}
+              accessibilityLabel={t("property.a11y.edit", {
+                name: property.name,
+              })}
+              style={({ pressed }) => [
+                styles.deleteSmall,
+                { opacity: pressed ? 0.5 : 0.7 },
+              ]}
+            >
+              <Ionicons name="create-outline" size={16} color={colors.text} />
+            </Pressable>
+            <Pressable
+              onPress={onDelete}
+              accessibilityLabel={t("property.a11y.delete", {
+                name: property.name,
+              })}
+              style={({ pressed }) => [
+                styles.deleteSmall,
+                { opacity: pressed ? 0.5 : 0.7 },
+              ]}
+            >
+              <Ionicons name="trash-outline" size={16} color={colors.text} />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+      <PropertyHistoryFooter history={history} />
+    </Pressable>
+  );
+}
+
+function PropertyHistoryFooter({ history }: { history: PropertyHistory }) {
+  const { colors } = useTheme();
+  const t = useT();
+
+  const parts: string[] = [];
+  if (history.cleanCount === 0) {
+    parts.push(t("home.propertyFooter.zeroCleans"));
+  } else {
+    parts.push(
+      history.cleanCount === 1
+        ? t("home.propertyFooter.oneClean")
+        : t("home.propertyFooter.manyCleans", { count: history.cleanCount })
+    );
+    if (history.lastCleanedAt) {
+      parts.push(
+        t("home.propertyFooter.lastCleaned", {
+          date: new Date(history.lastCleanedAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          }),
+        })
+      );
+    }
+    if (history.averageRating !== null) {
+      parts.push(
+        t("home.propertyFooter.avgRating", {
+          rating: history.averageRating.toFixed(1),
+        })
+      );
+    }
+  }
+
+  return (
+    <Text
+      style={[
+        styles.propertyCardFooter,
+        { color: colors.text, borderTopColor: colors.border },
+      ]}
+      numberOfLines={1}
+    >
+      {parts.join(" · ")}
+    </Text>
   );
 }
 
@@ -489,16 +559,25 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 16, fontWeight: "700" },
   emptyBody: { fontSize: 13, opacity: 0.7, textAlign: "center" },
   propertyCard: {
-    flexDirection: "row",
-    gap: 12,
     padding: 14,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
+    gap: 8,
+  },
+  propertyCardRow: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 12,
   },
   propertyName: { fontSize: 15, fontWeight: "700" },
   propertyAddress: { fontSize: 13, opacity: 0.7 },
   propertyNotes: { fontSize: 12, opacity: 0.6 },
+  propertyCardFooter: {
+    fontSize: 12,
+    opacity: 0.7,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   bookSmall: {
     paddingHorizontal: 14,
     paddingVertical: 8,

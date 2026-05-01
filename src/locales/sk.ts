@@ -26,6 +26,13 @@ export const sk: LocaleMessages = {
     bookSmall: "Objednať",
     emptyTitle: "Zatiaľ žiadne nehnuteľnosti",
     emptyBody: "Pridaj nehnuteľnosť a začni objednávať upratanie.",
+    propertyFooter: {
+      zeroCleans: "Zatiaľ žiadne upratovania",
+      oneClean: "1 upratovanie",
+      manyCleans: "{count} upratovaní",
+      lastCleaned: "naposledy {date}",
+      avgRating: "priemer ★{rating}",
+    },
     benefits: {
       title: "Prečo CleaningOrg?",
       verified: "Overení profesionáli s preverením",
@@ -61,6 +68,10 @@ export const sk: LocaleMessages = {
       edit: "Upraviť {name}",
       delete: "Vymazať {name}",
       openInMaps: "Otvoriť {address} v mapách",
+    },
+    history: {
+      title: "Rezervácie",
+      empty: "Pre túto nehnuteľnosť zatiaľ žiadne rezervácie.",
     },
     alerts: {
       nameRequired: "Vyžaduje sa názov",

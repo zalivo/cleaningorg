@@ -14,11 +14,13 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { EmbeddedMap } from "@/components/embedded-map";
+import { JobCard } from "@/components/job-card";
 import { BRAND } from "@/constants/colors";
 import { geocodeAddress } from "@/lib/geocode";
 import { useT } from "@/lib/i18n";
 import { openMapsForAddress } from "@/lib/maps";
 import { useActiveIdentity } from "@/store/identity";
+import { useJobsForProperty } from "@/store/jobs";
 import { useProperty, usePropertiesStore } from "@/store/properties";
 
 export default function PropertyDetailRoute() {
@@ -209,8 +211,48 @@ export default function PropertyDetailRoute() {
             onSave={save}
           />
         )}
+
+        {!editing && (
+          <PropertyJobsSection
+            propertyId={property.id}
+            onPressJob={(jobId) => router.push(`/jobs/${jobId}`)}
+          />
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+// ---------------- Property bookings (drill-in from Home card) ----------------
+
+function PropertyJobsSection({
+  propertyId,
+  onPressJob,
+}: {
+  propertyId: string;
+  onPressJob: (jobId: string) => void;
+}) {
+  const { colors } = useTheme();
+  const t = useT();
+  const jobs = useJobsForProperty(propertyId);
+
+  return (
+    <View style={styles.section}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        {t("property.history.title")}
+      </Text>
+      {jobs.length === 0 ? (
+        <Text style={[styles.sectionEmpty, { color: colors.text }]}>
+          {t("property.history.empty")}
+        </Text>
+      ) : (
+        <View style={{ gap: 10 }}>
+          {jobs.map((j) => (
+            <JobCard key={j.id} job={j} onPress={() => onPressJob(j.id)} />
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -419,6 +461,13 @@ function EditView({
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40, gap: 16 },
   title: { fontSize: 24, fontWeight: "700" },
+  section: { gap: 8, marginTop: 4 },
+  sectionTitle: { fontSize: 18, fontWeight: "700" },
+  sectionEmpty: {
+    fontSize: 13,
+    opacity: 0.6,
+    paddingVertical: 8,
+  },
   summary: {
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
