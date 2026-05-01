@@ -51,6 +51,22 @@ export const cs: LocaleMessages = {
     deleteAlertBody: "\"{name}\" bude odstraněna.",
     keep: "Ponechat",
     delete: "Smazat",
+    deleteButton: "Smazat nemovitost",
+    notFoundTitle: "Nemovitost nenalezena",
+    notFoundBody: "Mohla být smazána nebo patří jinému účtu.",
+    backHome: "Zpět domů",
+    a11y: {
+      open: "Otevřít {name}",
+      edit: "Upravit {name}",
+      delete: "Smazat {name}",
+      openInMaps: "Otevřít {address} v mapách",
+    },
+    alerts: {
+      nameRequired: "Vyžadován název",
+      nameRequiredBody: "Pojmenujte nemovitost.",
+      addressRequired: "Vyžadována adresa",
+      addressRequiredBody: "Zadejte adresu.",
+    },
   },
   book: {
     title: "Objednat úklid",

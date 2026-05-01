@@ -67,13 +67,13 @@ export default function HomeRoute() {
   async function submit() {
     if (!name.trim())
       return notify(
-        t("book.alerts.propertyRequired"),
-        t("property.namePlaceholder")
+        t("property.alerts.nameRequired"),
+        t("property.alerts.nameRequiredBody")
       );
     if (!address.trim())
       return notify(
-        t("book.alerts.addressRequired"),
-        t("book.alerts.addressBody")
+        t("property.alerts.addressRequired"),
+        t("property.alerts.addressRequiredBody")
       );
     if (saving) return; // double-tap guard
 
@@ -293,7 +293,7 @@ export default function HomeRoute() {
                     })
                   }
                   accessibilityRole="link"
-                  accessibilityLabel={`Open ${p.name}`}
+                  accessibilityLabel={t("property.a11y.open", { name: p.name })}
                   style={({ pressed }) => [
                     styles.propertyCard,
                     {
@@ -348,7 +348,9 @@ export default function HomeRoute() {
                             params: { id: p.id, edit: "1" },
                           })
                         }
-                        accessibilityLabel={`Edit ${p.name}`}
+                        accessibilityLabel={t("property.a11y.edit", {
+                          name: p.name,
+                        })}
                         style={({ pressed }) => [
                           styles.deleteSmall,
                           { opacity: pressed ? 0.5 : 0.7 },
@@ -362,7 +364,9 @@ export default function HomeRoute() {
                       </Pressable>
                       <Pressable
                         onPress={() => confirmDelete(p.id, p.name)}
-                        accessibilityLabel={`Delete ${p.name}`}
+                        accessibilityLabel={t("property.a11y.delete", {
+                          name: p.name,
+                        })}
                         style={({ pressed }) => [
                           styles.deleteSmall,
                           { opacity: pressed ? 0.5 : 0.7 },

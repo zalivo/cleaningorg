@@ -52,6 +52,22 @@ export const en = {
     deleteAlertBody: "\"{name}\" will be removed.",
     keep: "Keep",
     delete: "Delete",
+    deleteButton: "Delete property",
+    notFoundTitle: "Property not found",
+    notFoundBody: "It may have been deleted, or it belongs to a different account.",
+    backHome: "Back to Home",
+    a11y: {
+      open: "Open {name}",
+      edit: "Edit {name}",
+      delete: "Delete {name}",
+      openInMaps: "Open {address} in maps",
+    },
+    alerts: {
+      nameRequired: "Name required",
+      nameRequiredBody: "Give the property a short name.",
+      addressRequired: "Address required",
+      addressRequiredBody: "Type the address.",
+    },
   },
   book: {
     title: "Book a Cleaning",

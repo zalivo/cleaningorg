@@ -242,14 +242,17 @@ export function EmbeddedMap({
        * the map purely decorative. The "Open in Maps" Pressable below is
        * rendered later in JSX, so it sits above this blocker in z-order
        * and remains interactive within its own bounds.
+       *
+       * `View` (not `Pressable`) so iOS doesn't briefly highlight on
+       * tap. `onStartShouldSetResponder` claims the gesture without
+       * any visual feedback, and on web the absoluteFill div captures
+       * clicks above the iframe via natural DOM stacking.
        */}
-      <Pressable
-        onPress={() => {
-          /* swallow */
-        }}
+      <View
+        style={StyleSheet.absoluteFill}
+        onStartShouldSetResponder={() => true}
         accessible={false}
         importantForAccessibility="no-hide-descendants"
-        style={StyleSheet.absoluteFill}
       />
 
       {showOpenButton && (

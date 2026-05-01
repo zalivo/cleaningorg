@@ -16,6 +16,7 @@ import {
 import { EmbeddedMap } from "@/components/embedded-map";
 import { BRAND } from "@/constants/colors";
 import { geocodeAddress } from "@/lib/geocode";
+import { useT } from "@/lib/i18n";
 import { openMapsForAddress } from "@/lib/maps";
 import { useActiveIdentity } from "@/store/identity";
 import { useProperty, usePropertiesStore } from "@/store/properties";
@@ -28,6 +29,7 @@ export default function PropertyDetailRoute() {
   const property = useProperty(params.id);
   const updateProperty = usePropertiesStore((s) => s.updateProperty);
   const deleteProperty = usePropertiesStore((s) => s.deleteProperty);
+  const t = useT();
 
   // Field state — initialised once from the current property snapshot.
   // Subsequent property mutations don't auto-overwrite typing in progress.
@@ -36,6 +38,10 @@ export default function PropertyDetailRoute() {
   const [address, setAddress] = useState(property?.address ?? "");
   const [notes, setNotes] = useState(property?.notes ?? "");
   const [saving, setSaving] = useState(false);
+  // Suppresses the "Property not found" branch during the back-animation
+  // window after a delete. Without this, the screen briefly repaints as
+  // not-found between the store mutation and the actual unmount.
+  const [deleting, setDeleting] = useState(false);
 
   // Property tab is admin-only; mirror the Home tab's role gate.
   if (identity.role !== "booker") {
@@ -46,14 +52,19 @@ export default function PropertyDetailRoute() {
   // viewers don't bleed across each other in the demo's identity model.
   const ownedByMe = property && property.ownerId === identity.id;
   if (!property || !ownedByMe) {
+    if (deleting) {
+      // The user just deleted this property; the back animation is still
+      // running. Render nothing instead of flashing the not-found view.
+      return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+    }
     return (
       <View style={[styles.empty, { backgroundColor: colors.background }]}>
         <Ionicons name="home-outline" size={28} color={BRAND} />
         <Text style={[styles.emptyTitle, { color: colors.text }]}>
-          Property not found
+          {t("property.notFoundTitle")}
         </Text>
         <Text style={[styles.emptyBody, { color: colors.text }]}>
-          It may have been deleted, or it belongs to a different account.
+          {t("property.notFoundBody")}
         </Text>
         <Pressable
           onPress={() => router.replace("/(tabs)")}
@@ -62,7 +73,7 @@ export default function PropertyDetailRoute() {
             { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <Text style={styles.backBtnText}>Back to Home</Text>
+          <Text style={styles.backBtnText}>{t("property.backHome")}</Text>
         </Pressable>
       </View>
     );
@@ -91,9 +102,15 @@ export default function PropertyDetailRoute() {
   async function save() {
     if (!property) return;
     if (!name.trim())
-      return notify("Name required", "Give the property a short name.");
+      return notify(
+        t("property.alerts.nameRequired"),
+        t("property.alerts.nameRequiredBody")
+      );
     if (!address.trim())
-      return notify("Address required", "Type the address.");
+      return notify(
+        t("property.alerts.addressRequired"),
+        t("property.alerts.addressRequiredBody")
+      );
     if (saving) return; // double-tap guard
 
     const trimmedName = name.trim();
@@ -124,22 +141,27 @@ export default function PropertyDetailRoute() {
   function confirmDelete() {
     if (!property) return;
     const id = property.id;
+    const propertyName = property.name;
     const ok = () => {
-      // Trigger the back animation first so React doesn't repaint this
-      // screen as "Property not found" between the store mutation and
-      // the actual unmount.
+      // Set the `deleting` flag synchronously so the imminent re-render
+      // (triggered by deleteProperty) takes the suppressed-render branch
+      // up top instead of flashing "Property not found" during the back
+      // animation. router.back() is queued; deleteProperty mutates the
+      // store in the same React batch.
+      setDeleting(true);
       router.back();
       deleteProperty(id);
     };
     if (Platform.OS === "web") {
-      if (window.confirm(`Delete "${property.name}"?`)) ok();
+      if (window.confirm(t("property.deletePrompt", { name: propertyName })))
+        ok();
     } else {
       Alert.alert(
-        "Delete property?",
-        `"${property.name}" will be removed.`,
+        t("property.deleteAlertTitle"),
+        t("property.deleteAlertBody", { name: propertyName }),
         [
-          { text: "Keep", style: "cancel" },
-          { text: "Delete", style: "destructive", onPress: ok },
+          { text: t("property.keep"), style: "cancel" },
+          { text: t("property.delete"), style: "destructive", onPress: ok },
         ]
       );
     }
@@ -208,6 +230,7 @@ function ReadView({
   onOpenMap: () => void;
 }) {
   const { colors } = useTheme();
+  const t = useT();
   return (
     <>
       <View
@@ -219,7 +242,7 @@ function ReadView({
         <Pressable
           onPress={onOpenMap}
           accessibilityRole="link"
-          accessibilityLabel={`Open ${address} in maps`}
+          accessibilityLabel={t("property.a11y.openInMaps", { address })}
           style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}
         >
           <Ionicons name="location-outline" size={16} color={colors.text} />
@@ -248,7 +271,7 @@ function ReadView({
         ]}
       >
         <Ionicons name="create-outline" size={18} color="white" />
-        <Text style={styles.btnPrimaryText}>Edit property</Text>
+        <Text style={styles.btnPrimaryText}>{t("property.edit")}</Text>
       </Pressable>
 
       <Pressable
@@ -259,7 +282,7 @@ function ReadView({
         ]}
       >
         <Ionicons name="trash-outline" size={16} color="#B91C1C" />
-        <Text style={styles.btnDangerText}>Delete property</Text>
+        <Text style={styles.btnDangerText}>{t("property.deleteButton")}</Text>
       </Pressable>
     </>
   );
@@ -289,6 +312,7 @@ function EditView({
   onSave: () => void;
 }) {
   const { colors } = useTheme();
+  const t = useT();
   return (
     <View
       style={[
@@ -296,11 +320,13 @@ function EditView({
         { backgroundColor: colors.card, borderColor: colors.border },
       ]}
     >
-      <Text style={[styles.fieldLabel, { color: colors.text }]}>Name</Text>
+      <Text style={[styles.fieldLabel, { color: colors.text }]}>
+        {t("property.name")}
+      </Text>
       <TextInput
         value={name}
         onChangeText={onChangeName}
-        placeholder="Pařížská Apartment"
+        placeholder={t("property.namePlaceholder")}
         placeholderTextColor={colors.text + "80"}
         style={[
           styles.input,
@@ -311,11 +337,13 @@ function EditView({
           },
         ]}
       />
-      <Text style={[styles.fieldLabel, { color: colors.text }]}>Address</Text>
+      <Text style={[styles.fieldLabel, { color: colors.text }]}>
+        {t("property.address")}
+      </Text>
       <TextInput
         value={address}
         onChangeText={onChangeAddress}
-        placeholder="Pařížská 5, 110 00 Praha 1"
+        placeholder={t("property.addressPlaceholder")}
         placeholderTextColor={colors.text + "80"}
         autoCapitalize="words"
         autoComplete="street-address"
@@ -331,12 +359,12 @@ function EditView({
         ]}
       />
       <Text style={[styles.fieldLabel, { color: colors.text }]}>
-        Notes (optional)
+        {t("property.notes")}
       </Text>
       <TextInput
         value={notes}
         onChangeText={onChangeNotes}
-        placeholder="Gate code, parking, pets, etc."
+        placeholder={t("property.notesPlaceholder")}
         placeholderTextColor={colors.text + "80"}
         multiline
         style={[
@@ -362,7 +390,7 @@ function EditView({
           ]}
         >
           <Text style={[styles.btnGhostText, { color: colors.text }]}>
-            Cancel
+            {t("property.cancel")}
           </Text>
         </Pressable>
         <Pressable
@@ -378,7 +406,9 @@ function EditView({
           ]}
         >
           <Text style={styles.btnPrimaryText}>
-            {saving ? "Looking up address…" : "Save changes"}
+            {saving
+              ? t("property.lookingUp")
+              : t("property.saveChanges")}
           </Text>
         </Pressable>
       </View>
