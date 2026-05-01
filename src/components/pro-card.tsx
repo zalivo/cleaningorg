@@ -3,6 +3,7 @@ import { useTheme } from "@react-navigation/native";
 import { Pressable, View, Text, StyleSheet } from "react-native";
 import { ProAvatar } from "@/components/pro-avatar";
 import type { Professional } from "@/data/professionals";
+import { useCleanerAggregateRating } from "@/store/ratings";
 
 interface Props {
   pro: Professional;
@@ -12,6 +13,7 @@ interface Props {
 
 export function ProCard({ pro, onPress, compact }: Props) {
   const { colors } = useTheme();
+  const agg = useCleanerAggregateRating(pro.id);
   return (
     <Pressable
       onPress={onPress}
@@ -33,10 +35,10 @@ export function ProCard({ pro, onPress, compact }: Props) {
         <View style={styles.row}>
           <Ionicons name="star" size={13} color="#F59E0B" />
           <Text style={[styles.rating, { color: colors.text }]}>
-            {pro.rating.toFixed(1)}
+            {agg.avg.toFixed(1)}
           </Text>
           <Text style={[styles.jobs, { color: colors.text }]}>
-            ({pro.jobsCompleted})
+            ({agg.count})
           </Text>
         </View>
         {!compact && (

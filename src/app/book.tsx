@@ -21,11 +21,16 @@ import {
   formatPrice,
   formatRatePerHour,
 } from "@/data/jobs";
-import { getProfessional, professionals } from "@/data/professionals";
+import {
+  type Professional,
+  getProfessional,
+  professionals,
+} from "@/data/professionals";
 import { getReviewer, reviewers } from "@/data/reviewers";
 import { useActiveIdentity } from "@/store/identity";
 import { useJobsStore } from "@/store/jobs";
 import { usePropertiesForOwner, useProperty } from "@/store/properties";
+import { useCleanerAggregateRating } from "@/store/ratings";
 
 const DATE_OPTIONS = [
   { id: "tomorrow", label: "Tomorrow", offsetDays: 1 },
@@ -303,10 +308,9 @@ export default function BookRoute() {
         <Field label="Cleaner">
           <View style={styles.chipsWrap}>
             {professionals.map((p) => (
-              <Chip
+              <CleanerChip
                 key={p.id}
-                label={p.name}
-                hint={`★ ${p.rating.toFixed(1)}`}
+                pro={p}
                 selected={p.id === cleanerId}
                 onPress={() => setCleanerId(p.id)}
               />
@@ -410,6 +414,26 @@ function Field({
       <Text style={[styles.fieldLabel, { color: colors.text }]}>{label}</Text>
       {children}
     </View>
+  );
+}
+
+function CleanerChip({
+  pro,
+  selected,
+  onPress,
+}: {
+  pro: Professional;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const agg = useCleanerAggregateRating(pro.id);
+  return (
+    <Chip
+      label={pro.name}
+      hint={`★ ${agg.avg.toFixed(1)}`}
+      selected={selected}
+      onPress={onPress}
+    />
   );
 }
 

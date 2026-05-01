@@ -16,6 +16,7 @@ import {
 import { EmbeddedMap } from "@/components/embedded-map";
 import { NoteComposer } from "@/components/note-composer";
 import { NoteRow } from "@/components/note-row";
+import { RatingPrompt } from "@/components/rating-prompt";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import {
   type Job,
@@ -336,6 +337,26 @@ export default function JobDetailRoute() {
             </Pressable>
           </View>
         </View>
+      )}
+
+      {/* ---- Post-job ratings ---- */}
+      {job.status === "done" && isOwnerBooker && (
+        <RatingPrompt
+          jobId={jobId}
+          raterRole="booker"
+          raterIdentityId={identity.id}
+          subjectIdentityId={job.cleanerId}
+          heading={`Rate ${job.cleanerName}`}
+        />
+      )}
+      {job.status === "done" && isAssignedReviewer && (
+        <RatingPrompt
+          jobId={jobId}
+          raterRole="reviewer"
+          raterIdentityId={identity.id}
+          subjectIdentityId={job.cleanerId}
+          heading={`Optional: rate ${job.cleanerName}`}
+        />
       )}
 
       {/* ---- Cleaner notes ---- */}

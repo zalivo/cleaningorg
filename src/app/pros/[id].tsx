@@ -7,12 +7,14 @@ import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { formatRatePerHour } from "@/data/jobs";
 import { getProfessional } from "@/data/professionals";
 import { getService } from "@/data/services";
+import { useCleanerAggregateRating } from "@/store/ratings";
 
 export default function ProDetailRoute() {
   const { colors } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const pro = getProfessional(id);
+  const agg = useCleanerAggregateRating(id ?? "");
 
   if (!pro) {
     return (
@@ -33,10 +35,10 @@ export default function ProDetailRoute() {
         <View style={styles.ratingRow}>
           <Ionicons name="star" size={16} color="#F59E0B" />
           <Text style={[styles.rating, { color: colors.text }]}>
-            {pro.rating.toFixed(1)}
+            {agg.avg.toFixed(1)}
           </Text>
           <Text style={[styles.jobs, { color: colors.text }]}>
-            · {pro.jobsCompleted} jobs
+            · {agg.count} jobs
           </Text>
         </View>
       </View>
@@ -44,7 +46,7 @@ export default function ProDetailRoute() {
       <View style={styles.statsRow}>
         <Stat label="Experience" value={`${pro.yearsExperience} yrs`} />
         <Stat label="Rate" value={formatRatePerHour(pro.hourlyRate)} />
-        <Stat label="Rating" value={pro.rating.toFixed(1)} />
+        <Stat label="Rating" value={agg.avg.toFixed(1)} />
       </View>
 
       <Section title="About">
