@@ -110,19 +110,20 @@ export default function JobDetailRoute() {
         </View>
       )}
 
-      <Text style={[styles.title, { color: colors.text }]}>{job.serviceName}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>
+        {job.propertyName}
+      </Text>
       <View
         style={[
           styles.summary,
           { backgroundColor: colors.card, borderColor: colors.border },
         ]}
       >
-        <Row icon="calendar-outline" text={formatJobDate(job.date)} />
         <Row icon="location-outline" text={job.address} />
+        <Row icon="calendar-outline" text={formatJobDate(job.date)} />
         <Row icon="person-circle-outline" text={`Cleaner: ${job.cleanerName}`} />
         <Row icon="shield-checkmark-outline" text={`Reviewer: ${job.reviewerName}`} />
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
-        <Row icon="cash-outline" text={`$${job.totalPrice}`} />
       </View>
 
       {/* ---- Booker actions ---- */}

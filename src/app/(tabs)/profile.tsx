@@ -15,6 +15,7 @@ import { BRAND } from "@/constants/colors";
 import { identities, type Role } from "@/data/identities";
 import { useActiveIdentity, useIdentityStore } from "@/store/identity";
 import { useJobsStore } from "@/store/jobs";
+import { usePropertiesStore } from "@/store/properties";
 
 const ROLE_LABEL: Record<Role, string> = {
   booker: "Booker",
@@ -26,16 +27,20 @@ export default function ProfileRoute() {
   const { colors } = useTheme();
   const identity = useActiveIdentity();
   const setActive = useIdentityStore((s) => s.setActiveIdentity);
-  const reset = useJobsStore((s) => s.resetDemo);
+  const resetJobs = useJobsStore((s) => s.resetDemo);
+  const resetProperties = usePropertiesStore((s) => s.resetDemo);
 
   function confirmReset() {
-    const ok = () => reset();
+    const ok = () => {
+      resetJobs();
+      resetProperties();
+    };
     if (Platform.OS === "web") {
       if (window.confirm("Reset demo data?")) ok();
     } else {
       Alert.alert(
         "Reset demo data?",
-        "All current jobs will be replaced with the seed data.",
+        "All current jobs and properties will be replaced with the seed data.",
         [
           { text: "Keep", style: "cancel" },
           { text: "Reset", style: "destructive", onPress: ok },

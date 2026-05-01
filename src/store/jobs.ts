@@ -7,25 +7,26 @@ import {
   type Job,
   seedJobs,
 } from "@/data/jobs";
-import { getService, type ServiceId } from "@/data/services";
 
-const SERVICE_ROOMS: Record<ServiceId, string[]> = {
-  standard: ["Kitchen", "Bathroom", "Living areas", "Bedrooms"],
-  deep: ["Kitchen", "Bathroom", "Living areas", "Bedrooms", "Inside appliances", "Windows"],
-  "move-out": ["Kitchen", "Bathroom", "Bedrooms", "Closets", "Floors", "Walls"],
-  office: ["Desks", "Breakroom", "Bathrooms", "Common areas"],
-  "post-construction": ["Dust removal", "Floors", "Windows", "Fixtures"],
-};
+const DEFAULT_ROOMS = [
+  "Kitchen",
+  "Bathroom",
+  "Living areas",
+  "Bedrooms",
+  "Floors",
+  "Trash",
+];
 
 export interface BookJobInput {
-  serviceId: ServiceId;
+  propertyId: string;
+  propertyName: string;
+  address: string;
   bookerId: string;
   cleanerId: string;
   cleanerName: string;
   reviewerId: string;
   reviewerName: string;
   date: string;
-  address: string;
   notes?: string;
 }
 
@@ -52,20 +53,18 @@ export const useJobsStore = create<JobsState>()(
     (set) => ({
       jobs: seedJobs,
       bookJob: (input) => {
-        const service = getService(input.serviceId);
         const job: Job = {
           id: `j${Date.now()}`,
-          serviceId: input.serviceId,
-          serviceName: service?.name ?? input.serviceId,
+          propertyId: input.propertyId,
+          propertyName: input.propertyName,
+          address: input.address,
           bookerId: input.bookerId,
           cleanerId: input.cleanerId,
           cleanerName: input.cleanerName,
           reviewerId: input.reviewerId,
           reviewerName: input.reviewerName,
           date: input.date,
-          address: input.address,
           notes: input.notes,
-          totalPrice: service?.price ?? 0,
           status: "ready-to-clean",
           declineCount: 0,
           createdAt: new Date().toISOString(),
@@ -77,10 +76,9 @@ export const useJobsStore = create<JobsState>()(
         set((s) => ({
           jobs: patch(s.jobs, jobId, (j) => {
             if (j.status !== "ready-to-clean") return {};
-            const rooms = SERVICE_ROOMS[j.serviceId] ?? ["Whole space"];
             const checklist: ChecklistItem[] =
               j.checklist?.map((c) => ({ ...c, done: false })) ??
-              rooms.map((room) => ({ room, done: false }));
+              DEFAULT_ROOMS.map((room) => ({ room, done: false }));
             return { status: "cleaning", checklist };
           }),
         }));

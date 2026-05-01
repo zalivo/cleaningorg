@@ -1,5 +1,3 @@
-import type { ServiceId } from "./services";
-
 export type JobStatus =
   | "ready-to-clean"
   | "cleaning"
@@ -15,54 +13,53 @@ export interface ChecklistItem {
 
 export interface Job {
   id: string;
-  serviceId: ServiceId;
-  serviceName: string;
+  propertyId: string;
+  propertyName: string; // snapshotted at book time
+  address: string;      // snapshotted at book time
   bookerId: string;
   cleanerId: string;
   cleanerName: string;
   reviewerId: string;
   reviewerName: string;
-  date: string; // ISO
-  address: string;
+  date: string;         // ISO
   notes?: string;
-  totalPrice: number;
   status: JobStatus;
   checklist?: ChecklistItem[];
   photoUri?: string;
   declineReason?: string;
   declineCount: number;
-  createdAt: string; // ISO
+  createdAt: string;    // ISO
 }
 
 export const seedJobs: Job[] = [
   {
     id: "j1",
-    serviceId: "standard",
-    serviceName: "Standard Clean",
+    propertyId: "p1",
+    propertyName: "Evergreen House",
+    address: "742 Evergreen Terrace",
     bookerId: "booker-1",
     cleanerId: "1",
     cleanerName: "Maria Santos",
     reviewerId: "r1",
     reviewerName: "Priya Sharma",
     date: "2026-05-04T10:00:00.000Z",
-    address: "742 Evergreen Terrace",
-    totalPrice: 80,
+    notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-to-clean",
     declineCount: 0,
     createdAt: "2026-05-01T08:00:00.000Z",
   },
   {
     id: "j2",
-    serviceId: "deep",
-    serviceName: "Deep Clean",
+    propertyId: "p1",
+    propertyName: "Evergreen House",
+    address: "742 Evergreen Terrace",
     bookerId: "booker-1",
     cleanerId: "1",
     cleanerName: "Maria Santos",
     reviewerId: "r2",
     reviewerName: "Tom Williams",
     date: "2026-05-02T09:00:00.000Z",
-    address: "742 Evergreen Terrace",
-    totalPrice: 150,
+    notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-for-review",
     checklist: [
       { room: "Kitchen", done: true },
@@ -75,16 +72,16 @@ export const seedJobs: Job[] = [
   },
   {
     id: "j3",
-    serviceId: "office",
-    serviceName: "Office Clean",
+    propertyId: "p2",
+    propertyName: "Market St Office",
+    address: "500 Market St, Floor 3",
     bookerId: "booker-1",
     cleanerId: "3",
     cleanerName: "Aisha Patel",
     reviewerId: "r1",
     reviewerName: "Priya Sharma",
     date: "2026-04-15T18:00:00.000Z",
-    address: "500 Market St, Floor 3",
-    totalPrice: 120,
+    notes: "Reception will let the cleaner in. After-hours only.",
     status: "done",
     declineCount: 0,
     createdAt: "2026-04-14T08:00:00.000Z",

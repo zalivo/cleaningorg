@@ -16,9 +16,9 @@ import {
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { getProfessional, professionals } from "@/data/professionals";
 import { getReviewer, reviewers } from "@/data/reviewers";
-import { type ServiceId, services } from "@/data/services";
 import { useActiveIdentity } from "@/store/identity";
 import { useJobsStore } from "@/store/jobs";
+import { usePropertiesForOwner, useProperty } from "@/store/properties";
 
 const DATE_OPTIONS = [
   { id: "tomorrow", label: "Tomorrow", offsetDays: 1 },
@@ -53,39 +53,46 @@ function notify(title: string, message: string) {
 export default function BookRoute() {
   const { colors } = useTheme();
   const router = useRouter();
-  const params = useLocalSearchParams<{ serviceId?: string; proId?: string }>();
+  const params = useLocalSearchParams<{ propertyId?: string; proId?: string }>();
   const identity = useActiveIdentity();
   const bookJob = useJobsStore((s) => s.bookJob);
+  const isBooker = identity.role === "booker";
 
-  const initialService: ServiceId =
-    services.find((s) => s.id === params.serviceId)?.id ?? services[0].id;
+  const myProperties = usePropertiesForOwner(identity.id);
   const preselectedPro = params.proId ? getProfessional(params.proId) : undefined;
 
-  const [serviceId, setServiceId] = useState<ServiceId>(initialService);
+  const initialPropertyId = params.propertyId ?? myProperties[0]?.id ?? "";
+  const [propertyId, setPropertyId] = useState<string>(initialPropertyId);
+  const property = useProperty(propertyId);
+
   const [dateId, setDateId] = useState<string>(DATE_OPTIONS[0].id);
   const [timeId, setTimeId] = useState<string>(TIME_OPTIONS[0].id);
-  const [address, setAddress] = useState("");
-  const [notes, setNotes] = useState("");
   const [cleanerId, setCleanerId] = useState<string>(
     preselectedPro?.id ?? professionals[0].id
   );
   const [reviewerId, setReviewerId] = useState<string>(reviewers[0].id);
+  const [notes, setNotes] = useState<string>(property?.notes ?? "");
 
-  const service = services.find((s) => s.id === serviceId) ?? services[0];
-  const isBooker = identity.role === "booker";
+  function pickProperty(id: string) {
+    setPropertyId(id);
+    // Refresh notes when picking a different property — but don't overwrite
+    // anything the user has already typed.
+    if (!notes.trim()) {
+      const next = myProperties.find((p) => p.id === id);
+      if (next?.notes) setNotes(next.notes);
+    }
+  }
 
   const handleConfirm = () => {
     if (!isBooker) {
-      // Defense-in-depth: the Confirm button is disabled in this state.
       notify(
-        "Switch to booker",
-        "Only the booker identity can create new bookings. Switch from the Profile tab."
+        "Switch to admin",
+        "Only the property admin can create new bookings. Switch from the Profile tab."
       );
       return;
     }
-    const trimmedAddress = address.trim();
-    if (!trimmedAddress) {
-      notify("Address required", "Please enter the address for the cleaning.");
+    if (!property) {
+      notify("Property required", "Pick a property to clean.");
       return;
     }
     if (!cleanerId) {
@@ -105,19 +112,53 @@ export default function BookRoute() {
     }
 
     bookJob({
-      serviceId,
+      propertyId: property.id,
+      propertyName: property.name,
+      address: property.address,
       bookerId: identity.id,
       cleanerId: cleaner.id,
       cleanerName: cleaner.name,
       reviewerId: reviewer.id,
       reviewerName: reviewer.name,
       date: resolveDate(dateId, timeId),
-      address: trimmedAddress,
       notes: notes.trim() || undefined,
     });
 
     router.replace("/(tabs)/jobs");
   };
+
+  if (isBooker && myProperties.length === 0) {
+    return (
+      <ScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={styles.content}
+      >
+        <View
+          style={[
+            styles.empty,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Ionicons name="home-outline" size={28} color={BRAND} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+            No properties yet
+          </Text>
+          <Text style={[styles.emptyBody, { color: colors.text }]}>
+            Add a property from the Home tab before booking a cleaning.
+          </Text>
+          <Pressable
+            onPress={() => router.replace("/")}
+            style={({ pressed }) => [
+              styles.confirm,
+              { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Text style={styles.confirmText}>Go to Home</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -132,7 +173,7 @@ export default function BookRoute() {
           <View style={[styles.roleBanner, { backgroundColor: "#FEF3C7" }]}>
             <Ionicons name="alert-circle" size={20} color="#92400E" />
             <Text style={styles.roleBannerText}>
-              You're viewing as <Text style={{ fontWeight: "700" }}>{identity.name}</Text> ({identity.role}). Only the booker can create bookings — switch from the Profile tab.
+              You're viewing as <Text style={{ fontWeight: "700" }}>{identity.name}</Text> ({identity.role}). Only the admin can create bookings — switch from the Profile tab.
             </Text>
           </View>
         )}
@@ -147,14 +188,15 @@ export default function BookRoute() {
           </View>
         )}
 
-        <Field label="Service">
+        <Field label="Property">
           <View style={styles.chipsWrap}>
-            {services.map((s) => (
+            {myProperties.map((p) => (
               <Chip
-                key={s.id}
-                label={s.name}
-                selected={s.id === serviceId}
-                onPress={() => setServiceId(s.id)}
+                key={p.id}
+                label={p.name}
+                hint={p.address}
+                selected={p.id === propertyId}
+                onPress={() => pickProperty(p.id)}
               />
             ))}
           </View>
@@ -185,27 +227,6 @@ export default function BookRoute() {
               />
             ))}
           </View>
-        </Field>
-
-        <Field label="Address">
-          <TextInput
-            value={address}
-            onChangeText={setAddress}
-            placeholder="123 Main St, Apt 4"
-            placeholderTextColor={colors.text + "80"}
-            autoCapitalize="words"
-            autoComplete="street-address"
-            textContentType="fullStreetAddress"
-            returnKeyType="done"
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
-          />
         </Field>
 
         <Field label="Cleaner">
@@ -256,43 +277,21 @@ export default function BookRoute() {
           />
         </Field>
 
-        <View
-          style={[
-            styles.summary,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: colors.text }]}>
-              {service.name}
-            </Text>
-            <Text style={[styles.summaryValue, { color: colors.text }]}>
-              ${service.price}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: colors.text }]}>
-              Estimated duration
-            </Text>
-            <Text style={[styles.summaryValue, { color: colors.text }]}>
-              {service.durationHours}h
-            </Text>
-          </View>
+        {property && (
           <View
             style={[
-              styles.summaryRow,
-              styles.summaryTotal,
-              { borderTopColor: colors.border },
+              styles.summary,
+              { backgroundColor: colors.card, borderColor: colors.border },
             ]}
           >
-            <Text style={[styles.totalLabel, { color: colors.text }]}>
-              Total
+            <Text style={[styles.summaryTitle, { color: colors.text }]}>
+              {property.name}
             </Text>
-            <Text style={[styles.totalValue, { color: BRAND }]}>
-              ${service.price}
+            <Text style={[styles.summaryAddress, { color: colors.text }]}>
+              {property.address}
             </Text>
           </View>
-        </View>
+        )}
 
         <Pressable
           onPress={handleConfirm}
@@ -306,7 +305,7 @@ export default function BookRoute() {
           ]}
         >
           <Text style={styles.confirmText}>
-            {isBooker ? "Confirm Booking" : "Switch to booker to book"}
+            {isBooker ? "Confirm Booking" : "Switch to admin to book"}
           </Text>
         </Pressable>
       </ScrollView>
@@ -417,21 +416,23 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 14,
-    gap: 10,
+    gap: 4,
   },
-  summaryRow: { flexDirection: "row", justifyContent: "space-between" },
-  summaryLabel: { fontSize: 14, opacity: 0.8 },
-  summaryValue: { fontSize: 14, fontWeight: "600" },
-  summaryTotal: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 10,
-  },
-  totalLabel: { fontSize: 16, fontWeight: "600" },
-  totalValue: { fontSize: 18, fontWeight: "700" },
+  summaryTitle: { fontSize: 16, fontWeight: "700" },
+  summaryAddress: { fontSize: 14, opacity: 0.75 },
   confirm: {
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
   },
   confirmText: { color: "white", fontSize: 16, fontWeight: "700" },
+  empty: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    padding: 20,
+    alignItems: "center",
+    gap: 10,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: "700" },
+  emptyBody: { fontSize: 14, opacity: 0.7, textAlign: "center" },
 });
