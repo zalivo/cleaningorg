@@ -133,13 +133,15 @@ export default function BookRoute() {
   const scheduledWindow = resolveWindow(dateId, timeId, durationId);
   const cleaner = getProfessional(cleanerId);
   const reviewer = getReviewer(reviewerId);
-  const priceCents = cleaner
+  const cleanerPayCents = cleaner
     ? computePriceCents(
         cleaner.hourlyRate,
         scheduledWindow.startISO,
         scheduledWindow.endISO,
       )
     : 0;
+  const reviewerFeeCents = reviewer?.feeCents ?? 0;
+  const priceCents = cleanerPayCents + reviewerFeeCents;
   const hours = estimatedHours(scheduledWindow.startISO, scheduledWindow.endISO);
 
   function pickProperty(id: string) {
@@ -176,7 +178,6 @@ export default function BookRoute() {
       setStep(2);
       return;
     }
-
     if (!cleaner || !reviewer) {
       notify(
         t("book.alerts.bookingFailedTitle"),
@@ -198,11 +199,8 @@ export default function BookRoute() {
       reviewerName: reviewer.name,
       scheduledStart: scheduledWindow.startISO,
       scheduledEnd: scheduledWindow.endISO,
-      priceCents: computePriceCents(
-        cleaner.hourlyRate,
-        scheduledWindow.startISO,
-        scheduledWindow.endISO,
-      ),
+      priceCents,
+      reviewerFeeCents,
       notes: notes.trim() || undefined,
     });
 
@@ -433,16 +431,58 @@ export default function BookRoute() {
                   {t("job.reviewerLabel", { name: reviewer?.name ?? "—" })}
                 </Text>
                 {cleaner && (
-                  <View style={styles.summaryPriceRow}>
-                    <Text
-                      style={[styles.summaryBreakdown, { color: colors.text }]}
+                  <View style={styles.summaryBreakdownGroup}>
+                    <View style={styles.summaryPriceRow}>
+                      <Text
+                        style={[styles.summaryBreakdown, { color: colors.text }]}
+                      >
+                        {`${formatRatePerHour(cleaner.hourlyRate)} · ${formatHours(hours)}`}
+                      </Text>
+                      <Text
+                        style={[styles.summaryBreakdown, { color: colors.text }]}
+                      >
+                        {formatPrice(cleanerPayCents)}
+                      </Text>
+                    </View>
+                    {reviewer && (
+                      <View style={styles.summaryPriceRow}>
+                        <Text
+                          style={[
+                            styles.summaryBreakdown,
+                            { color: colors.text },
+                          ]}
+                        >
+                          {t("book.reviewer")}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.summaryBreakdown,
+                            { color: colors.text },
+                          ]}
+                        >
+                          {formatPrice(reviewerFeeCents)}
+                        </Text>
+                      </View>
+                    )}
+                    <View
+                      style={[
+                        styles.summaryPriceRow,
+                        styles.summaryTotalRow,
+                        { borderTopColor: colors.border },
+                      ]}
                     >
-                      {formatRatePerHour(cleaner.hourlyRate)} ·{" "}
-                      {formatHours(hours)}
-                    </Text>
-                    <Text style={[styles.summaryPriceTotal, { color: BRAND }]}>
-                      {formatPrice(priceCents)}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.summaryBreakdown,
+                          { color: colors.text, fontWeight: "700" },
+                        ]}
+                      >
+                        {t("job.totalLabel")}
+                      </Text>
+                      <Text style={[styles.summaryPriceTotal, { color: BRAND }]}>
+                        {formatPrice(priceCents)}
+                      </Text>
+                    </View>
                   </View>
                 )}
               </View>
@@ -662,11 +702,16 @@ const styles = StyleSheet.create({
   summaryAddress: { fontSize: 14, opacity: 0.75 },
   summaryWindow: { fontSize: 13, fontWeight: "600", marginTop: 4 },
   summaryAssigned: { fontSize: 13, opacity: 0.8 },
+  summaryBreakdownGroup: { gap: 4, marginTop: 4 },
   summaryPriceRow: {
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
-    marginTop: 8,
+  },
+  summaryTotalRow: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 6,
+    marginTop: 2,
   },
   summaryBreakdown: { fontSize: 13, opacity: 0.75 },
   summaryPriceTotal: { fontSize: 22, fontWeight: "700" },
