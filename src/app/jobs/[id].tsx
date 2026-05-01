@@ -32,7 +32,12 @@ export default function JobDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const job = useJob(id);
   const identity = useActiveIdentity();
-  const actions = useJobsStore();
+  const cancel = useJobsStore((s) => s.cancel);
+  const startCleaning = useJobsStore((s) => s.startCleaning);
+  const finishCleaning = useJobsStore((s) => s.finishCleaning);
+  const startReview = useJobsStore((s) => s.startReview);
+  const approve = useJobsStore((s) => s.approve);
+  const decline = useJobsStore((s) => s.decline);
 
   const [declineMode, setDeclineMode] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
@@ -45,6 +50,7 @@ export default function JobDetailRoute() {
     );
   }
 
+  const jobId = job.id;
   const status = STATUS_STYLES[job.status];
   const isAssignedCleaner =
     identity.role === "cleaner" && identity.id === job.cleanerId;
@@ -54,7 +60,7 @@ export default function JobDetailRoute() {
     identity.role === "booker" && identity.id === job.bookerId;
 
   function confirmCancel() {
-    const ok = () => actions.cancel(job!.id);
+    const ok = () => cancel(jobId);
     if (Platform.OS === "web") {
       if (window.confirm("Cancel this booking?")) ok();
     } else {
@@ -68,7 +74,7 @@ export default function JobDetailRoute() {
   function submitDecline() {
     const reason = declineReason.trim();
     if (!reason) return;
-    actions.decline(job!.id, reason);
+    decline(jobId, reason);
     setDeclineMode(false);
     setDeclineReason("");
     router.back();
@@ -125,7 +131,7 @@ export default function JobDetailRoute() {
       {/* ---- Cleaner actions ---- */}
       {isAssignedCleaner && job.status === "ready-to-clean" && (
         <Pressable
-          onPress={() => actions.startCleaning(job.id)}
+          onPress={() => startCleaning(jobId)}
           style={({ pressed }) => [
             styles.btnPrimary,
             { opacity: pressed ? 0.85 : 1 },
@@ -136,7 +142,7 @@ export default function JobDetailRoute() {
       )}
       {isAssignedCleaner && job.status === "cleaning" && (
         <Pressable
-          onPress={() => actions.finishCleaning(job.id)}
+          onPress={() => finishCleaning(jobId)}
           style={({ pressed }) => [
             styles.btnPrimary,
             { opacity: pressed ? 0.85 : 1 },
@@ -149,7 +155,7 @@ export default function JobDetailRoute() {
       {/* ---- Reviewer actions ---- */}
       {isAssignedReviewer && job.status === "ready-for-review" && (
         <Pressable
-          onPress={() => actions.startReview(job.id)}
+          onPress={() => startReview(jobId)}
           style={({ pressed }) => [
             styles.btnPrimary,
             { opacity: pressed ? 0.85 : 1 },
@@ -162,7 +168,7 @@ export default function JobDetailRoute() {
         <View style={{ gap: 10 }}>
           <Pressable
             onPress={() => {
-              actions.approve(job.id);
+              approve(jobId);
               router.back();
             }}
             style={({ pressed }) => [
