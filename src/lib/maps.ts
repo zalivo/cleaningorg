@@ -1,7 +1,8 @@
 import { Linking, Platform } from "react-native";
 
 /**
- * Open the system map application for a free-text address.
+ * Open the system map application for an arbitrary search query (free-text
+ * address, place name, "lat,lon", etc.).
  *
  * - iOS: Apple Maps via the `maps://` scheme.
  * - Android: the platform's default map app via the `geo:` intent.
@@ -9,23 +10,19 @@ import { Linking, Platform } from "react-native";
  *
  * On the rare device where the native scheme has no handler (e.g. Android
  * without any maps app installed), we fall back to the Google Maps web URL.
- *
- * Returns a promise that resolves once a handler has been launched, or
- * rejects if no handler accepts the URL. Empty/whitespace addresses are a
- * no-op.
  */
-export async function openMapsForAddress(address: string): Promise<void> {
-  const trimmed = address.trim();
+async function openMapsForQuery(query: string): Promise<void> {
+  const trimmed = query.trim();
   if (!trimmed) return;
 
-  const q = encodeURIComponent(trimmed);
-  const webUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+  const encoded = encodeURIComponent(trimmed);
+  const webUrl = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
 
   let nativeUrl: string | undefined;
   if (Platform.OS === "ios") {
-    nativeUrl = `maps://?q=${q}`;
+    nativeUrl = `maps://?q=${encoded}`;
   } else if (Platform.OS === "android") {
-    nativeUrl = `geo:0,0?q=${q}`;
+    nativeUrl = `geo:0,0?q=${encoded}`;
   }
 
   if (nativeUrl) {
@@ -41,4 +38,23 @@ export async function openMapsForAddress(address: string): Promise<void> {
   }
 
   await Linking.openURL(webUrl);
+}
+
+/**
+ * Open the system map application for a free-text address. No-op for empty
+ * or whitespace-only input.
+ */
+export function openMapsForAddress(address: string): Promise<void> {
+  return openMapsForQuery(address);
+}
+
+/**
+ * Open the system map application for a coordinate pair. Coordinates are
+ * passed as "lat,lon" — every native maps URL scheme accepts this form.
+ */
+export function openMapsForCoords(
+  latitude: number,
+  longitude: number
+): Promise<void> {
+  return openMapsForQuery(`${latitude},${longitude}`);
 }

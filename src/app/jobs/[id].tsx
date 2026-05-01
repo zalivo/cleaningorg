@@ -134,7 +134,16 @@ export default function JobDetailRoute() {
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
       </View>
 
-      <EmbeddedMap address={job.address} height={200} showOpenButton={false} />
+      <View style={styles.section}>
+        <Text style={[styles.sectionLabel, { color: colors.text }]}>
+          Location
+        </Text>
+        <EmbeddedMap
+          address={job.address}
+          height={200}
+          showOpenButton={false}
+        />
+      </View>
 
       {/* ---- Booker actions ---- */}
       {isOwnerBooker && job.status === "ready-to-clean" && (
@@ -327,6 +336,14 @@ function Row({
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40, gap: 16 },
   empty: { flex: 1, alignItems: "center", justifyContent: "center" },
+  section: { gap: 8 },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    opacity: 0.6,
+    letterSpacing: 0.5,
+  },
   statusPill: {
     alignSelf: "flex-start",
     paddingHorizontal: 12,
