@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
+import { formatJobWindow } from "@/data/jobs";
 import { getProfessional, professionals } from "@/data/professionals";
 import { getReviewer, reviewers } from "@/data/reviewers";
 import { useActiveIdentity } from "@/store/identity";
@@ -33,13 +34,39 @@ const TIME_OPTIONS = [
   { id: "evening", label: "Evening", hint: "5pm – 9pm", hour: 18 },
 ];
 
-function resolveDate(dateId: string, timeId: string): string {
+const DURATION_OPTIONS = [
+  { id: "1h", label: "1 hour", hours: 1 },
+  { id: "2h", label: "2 hours", hours: 2 },
+  { id: "3h", label: "3 hours", hours: 3 },
+  { id: "4h", label: "4 hours", hours: 4 },
+  { id: "6h", label: "6 hours", hours: 6 },
+];
+
+const DEFAULT_DURATION_ID = "2h";
+
+interface ScheduledWindow {
+  startISO: string;
+  endISO: string;
+}
+
+function resolveWindow(
+  dateId: string,
+  timeId: string,
+  durationId: string
+): ScheduledWindow {
   const dOpt = DATE_OPTIONS.find((d) => d.id === dateId) ?? DATE_OPTIONS[0];
   const tOpt = TIME_OPTIONS.find((t) => t.id === timeId) ?? TIME_OPTIONS[0];
-  const d = new Date();
-  d.setDate(d.getDate() + dOpt.offsetDays);
-  d.setHours(tOpt.hour, 0, 0, 0);
-  return d.toISOString();
+  const dur =
+    DURATION_OPTIONS.find((d) => d.id === durationId) ??
+    DURATION_OPTIONS.find((d) => d.id === DEFAULT_DURATION_ID) ??
+    DURATION_OPTIONS[0];
+
+  const start = new Date();
+  start.setDate(start.getDate() + dOpt.offsetDays);
+  start.setHours(tOpt.hour, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(end.getHours() + dur.hours);
+  return { startISO: start.toISOString(), endISO: end.toISOString() };
 }
 
 function notify(title: string, message: string) {
@@ -67,11 +94,14 @@ export default function BookRoute() {
 
   const [dateId, setDateId] = useState<string>(DATE_OPTIONS[0].id);
   const [timeId, setTimeId] = useState<string>(TIME_OPTIONS[0].id);
+  const [durationId, setDurationId] = useState<string>(DEFAULT_DURATION_ID);
   const [cleanerId, setCleanerId] = useState<string>(
     preselectedPro?.id ?? professionals[0].id
   );
   const [reviewerId, setReviewerId] = useState<string>(reviewers[0].id);
   const [notes, setNotes] = useState<string>(property?.notes ?? "");
+
+  const scheduledWindow = resolveWindow(dateId, timeId, durationId);
 
   function pickProperty(id: string) {
     setPropertyId(id);
@@ -122,7 +152,8 @@ export default function BookRoute() {
       cleanerName: cleaner.name,
       reviewerId: reviewer.id,
       reviewerName: reviewer.name,
-      date: resolveDate(dateId, timeId),
+      scheduledStart: scheduledWindow.startISO,
+      scheduledEnd: scheduledWindow.endISO,
       notes: notes.trim() || undefined,
     });
 
@@ -231,6 +262,19 @@ export default function BookRoute() {
           </View>
         </Field>
 
+        <Field label="Duration">
+          <View style={styles.chipsWrap}>
+            {DURATION_OPTIONS.map((d) => (
+              <Chip
+                key={d.id}
+                label={d.label}
+                selected={d.id === durationId}
+                onPress={() => setDurationId(d.id)}
+              />
+            ))}
+          </View>
+        </Field>
+
         <Field label="Cleaner">
           <View style={styles.chipsWrap}>
             {professionals.map((p) => (
@@ -291,6 +335,9 @@ export default function BookRoute() {
             </Text>
             <Text style={[styles.summaryAddress, { color: colors.text }]}>
               {property.address}
+            </Text>
+            <Text style={[styles.summaryWindow, { color: BRAND }]}>
+              {formatJobWindow(scheduledWindow.startISO, scheduledWindow.endISO)}
             </Text>
           </View>
         )}
@@ -431,6 +478,7 @@ const styles = StyleSheet.create({
   },
   summaryTitle: { fontSize: 16, fontWeight: "700" },
   summaryAddress: { fontSize: 14, opacity: 0.75 },
+  summaryWindow: { fontSize: 13, fontWeight: "600", marginTop: 4 },
   confirm: {
     paddingVertical: 16,
     borderRadius: 14,

@@ -2,7 +2,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
-import { type Job, type JobStatus, formatJobDate } from "@/data/jobs";
+import {
+  type Job,
+  type JobStatus,
+  formatJobWindow,
+  isJobLate,
+} from "@/data/jobs";
 
 interface Props {
   job: Job;
@@ -21,6 +26,7 @@ const STATUS_STYLES: Record<JobStatus, { bg: string; fg: string; label: string }
 export function JobCard({ job, onPress }: Props) {
   const { colors } = useTheme();
   const status = STATUS_STYLES[job.status];
+  const late = isJobLate(job);
 
   return (
     <Pressable
@@ -58,9 +64,18 @@ export function JobCard({ job, onPress }: Props) {
       </View>
       <View style={styles.row}>
         <Ionicons name="calendar-outline" size={16} color={colors.text} />
-        <Text style={[styles.meta, { color: colors.text }]}>
-          {formatJobDate(job.date)}
+        <Text style={[styles.meta, { color: colors.text }]} numberOfLines={1}>
+          {formatJobWindow(job.scheduledStart, job.scheduledEnd)}
         </Text>
+        {late && (
+          <View
+            style={styles.latePill}
+            accessibilityLabel="This job is past its scheduled start"
+          >
+            <Ionicons name="time-outline" size={12} color="#92400E" />
+            <Text style={styles.lateText}>Late</Text>
+          </View>
+        )}
       </View>
       {job.declineCount > 0 && (
         <View style={[styles.row, styles.declineRow]}>
@@ -92,6 +107,16 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 11, fontWeight: "600" },
   row: { flexDirection: "row", alignItems: "center", gap: 6 },
   meta: { fontSize: 13, opacity: 0.85, flex: 1 },
+  latePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  lateText: { fontSize: 11, fontWeight: "600", color: "#92400E" },
   declineRow: { backgroundColor: "#FEE2E2", padding: 6, borderRadius: 6 },
   declineText: { fontSize: 12, color: "#B91C1C", flex: 1 },
 });

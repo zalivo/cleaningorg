@@ -17,7 +17,12 @@ import { EmbeddedMap } from "@/components/embedded-map";
 import { NoteComposer } from "@/components/note-composer";
 import { NoteRow } from "@/components/note-row";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
-import { type JobStatus, formatJobDate } from "@/data/jobs";
+import {
+  type Job,
+  type JobStatus,
+  formatJobDate,
+  formatJobWindow,
+} from "@/data/jobs";
 import { openMapsForAddress } from "@/lib/maps";
 import { useActiveIdentity } from "@/store/identity";
 import { useJob, useJobsStore } from "@/store/jobs";
@@ -30,6 +35,20 @@ const STATUS_STYLES: Record<JobStatus, { bg: string; fg: string; label: string }
   done: { bg: "#E5E7EB", fg: "#374151", label: "Done" },
   cancelled: { bg: "#FEE2E2", fg: "#B91C1C", label: "Cancelled" },
 };
+
+/**
+ * Format the actual cleaning window for display. Returns `null` when no
+ * actual times have been stamped yet (i.e. cleaning hasn't started).
+ */
+function actualLine(job: Job): string | null {
+  if (job.actualStart && job.actualEnd) {
+    return `Actual: ${formatJobWindow(job.actualStart, job.actualEnd)}`;
+  }
+  if (job.actualStart) {
+    return `Started: ${formatJobDate(job.actualStart)}`;
+  }
+  return null;
+}
 
 export default function JobDetailRoute() {
   const { colors } = useTheme();
@@ -59,6 +78,7 @@ export default function JobDetailRoute() {
 
   const jobId = job.id;
   const status = STATUS_STYLES[job.status];
+  const actual = actualLine(job);
   const isAssignedCleaner =
     identity.role === "cleaner" && identity.id === job.cleanerId;
   const isAssignedReviewer =
@@ -139,7 +159,11 @@ export default function JobDetailRoute() {
           actionIcon="open-outline"
           accessibilityLabel={`Open ${job.address} in maps`}
         />
-        <Row icon="calendar-outline" text={formatJobDate(job.date)} />
+        <Row
+          icon="calendar-outline"
+          text={`Scheduled: ${formatJobWindow(job.scheduledStart, job.scheduledEnd)}`}
+        />
+        {actual && <Row icon="time-outline" text={actual} />}
         <Row
           icon="person-circle-outline"
           text={`Cleaner: ${job.cleanerName}`}

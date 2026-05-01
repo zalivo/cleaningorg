@@ -29,7 +29,10 @@ export interface BookJobInput {
   cleanerName: string;
   reviewerId: string;
   reviewerName: string;
-  date: string;
+  /** ISO start of the booker-set window. Required. */
+  scheduledStart: string;
+  /** ISO end of the booker-set window. Required, must be after start. */
+  scheduledEnd: string;
   notes?: string;
 }
 
@@ -70,11 +73,38 @@ function patch(jobs: Job[], jobId: string, fn: (j: Job) => Partial<Job>): Job[] 
   return jobs.map((j) => (j.id === jobId ? { ...j, ...fn(j) } : j));
 }
 
+/** Sort jobs ascending by scheduled start (earliest first). */
+function bySchedule(a: Job, b: Job): number {
+  return (
+    new Date(a.scheduledStart).getTime() - new Date(b.scheduledStart).getTime()
+  );
+}
+
+/** Sort jobs descending by scheduled start (most recent first) — for history. */
+function byScheduleDesc(a: Job, b: Job): number {
+  return (
+    new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime()
+  );
+}
+
 export const useJobsStore = create<JobsState>()(
   persist(
     (set) => ({
       jobs: seedJobs,
       bookJob: (input) => {
+        const startMs = new Date(input.scheduledStart).getTime();
+        const endMs = new Date(input.scheduledEnd).getTime();
+        if (
+          !Number.isFinite(startMs) ||
+          !Number.isFinite(endMs) ||
+          endMs <= startMs
+        ) {
+          throw new Error(
+            "Cannot create job: scheduledEnd must be a valid ISO 8601 timestamp strictly after scheduledStart. " +
+              "The booking form is the only call site, so this almost certainly means a state-machine bug in the form's window resolver. " +
+              `Received scheduledStart=${JSON.stringify(input.scheduledStart)}, scheduledEnd=${JSON.stringify(input.scheduledEnd)}.`
+          );
+        }
         const job: Job = {
           id: `j${Date.now()}`,
           propertyId: input.propertyId,
@@ -87,7 +117,8 @@ export const useJobsStore = create<JobsState>()(
           cleanerName: input.cleanerName,
           reviewerId: input.reviewerId,
           reviewerName: input.reviewerName,
-          date: input.date,
+          scheduledStart: input.scheduledStart,
+          scheduledEnd: input.scheduledEnd,
           notes: input.notes,
           status: "ready-to-clean",
           declineCount: 0,
@@ -103,14 +134,23 @@ export const useJobsStore = create<JobsState>()(
             const checklist: ChecklistItem[] =
               j.checklist?.map((c) => ({ ...c, done: false })) ??
               DEFAULT_ROOMS.map((room) => ({ room, done: false }));
-            return { status: "cleaning", checklist };
+            return {
+              status: "cleaning",
+              checklist,
+              actualStart: new Date().toISOString(),
+            };
           }),
         }));
       },
       finishCleaning: (jobId) => {
         set((s) => ({
           jobs: patch(s.jobs, jobId, (j) =>
-            j.status === "cleaning" ? { status: "ready-for-review" } : {}
+            j.status === "cleaning"
+              ? {
+                  status: "ready-for-review",
+                  actualEnd: new Date().toISOString(),
+                }
+              : {}
           ),
         }));
       },
@@ -129,6 +169,9 @@ export const useJobsStore = create<JobsState>()(
         }));
       },
       decline: (jobId, reason) => {
+        // Reviewer rejection sends the job back to the cleaner. Clear the
+        // previous attempt's actual window so the next `cleaning` transition
+        // stamps fresh values.
         set((s) => ({
           jobs: patch(s.jobs, jobId, (j) =>
             j.status === "reviewing"
@@ -137,6 +180,8 @@ export const useJobsStore = create<JobsState>()(
                   declineReason: reason,
                   declineCount: j.declineCount + 1,
                   checklist: j.checklist?.map((c) => ({ ...c, done: false })),
+                  actualStart: undefined,
+                  actualEnd: undefined,
                 }
               : {}
           ),
@@ -191,11 +236,12 @@ export const useJobsStore = create<JobsState>()(
       resetDemo: () => set({ jobs: seedJobs }),
     }),
     {
-      // v3 = adds optional latitude/longitude snapshots for the embedded map.
+      // v4 = scheduled/actual time windows on Job (was: single `date`).
+      // v3 = added optional latitude/longitude snapshots for the embedded map.
       // v2 = property-based job model (was: service-based with totalPrice).
       // Key bumps orphan old payloads instead of hydrating malformed state
       // into the new types.
-      name: "cleaningorg/jobs.v3",
+      name: "cleaningorg/jobs.v4",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
@@ -206,12 +252,14 @@ export const useJobsStore = create<JobsState>()(
 export function useJobsForBooker(bookerId: string): Job[] {
   return useJobsStore(
     useShallow((s) =>
-      s.jobs.filter(
-        (j) =>
-          j.bookerId === bookerId &&
-          j.status !== "done" &&
-          j.status !== "cancelled"
-      )
+      s.jobs
+        .filter(
+          (j) =>
+            j.bookerId === bookerId &&
+            j.status !== "done" &&
+            j.status !== "cancelled"
+        )
+        .sort(bySchedule)
     )
   );
 }
@@ -219,13 +267,15 @@ export function useJobsForBooker(bookerId: string): Job[] {
 export function useJobsForCleaner(cleanerId: string): Job[] {
   return useJobsStore(
     useShallow((s) =>
-      s.jobs.filter(
-        (j) =>
-          j.cleanerId === cleanerId &&
-          (j.status === "ready-to-clean" ||
-            j.status === "cleaning" ||
-            j.status === "ready-for-review")
-      )
+      s.jobs
+        .filter(
+          (j) =>
+            j.cleanerId === cleanerId &&
+            (j.status === "ready-to-clean" ||
+              j.status === "cleaning" ||
+              j.status === "ready-for-review")
+        )
+        .sort(bySchedule)
     )
   );
 }
@@ -233,11 +283,13 @@ export function useJobsForCleaner(cleanerId: string): Job[] {
 export function useJobsForReviewer(reviewerId: string): Job[] {
   return useJobsStore(
     useShallow((s) =>
-      s.jobs.filter(
-        (j) =>
-          j.reviewerId === reviewerId &&
-          (j.status === "ready-for-review" || j.status === "reviewing")
-      )
+      s.jobs
+        .filter(
+          (j) =>
+            j.reviewerId === reviewerId &&
+            (j.status === "ready-for-review" || j.status === "reviewing")
+        )
+        .sort(bySchedule)
     )
   );
 }
@@ -245,11 +297,13 @@ export function useJobsForReviewer(reviewerId: string): Job[] {
 export function useHistoryForCleaner(cleanerId: string): Job[] {
   return useJobsStore(
     useShallow((s) =>
-      s.jobs.filter(
-        (j) =>
-          j.cleanerId === cleanerId &&
-          (j.status === "done" || j.status === "cancelled")
-      )
+      s.jobs
+        .filter(
+          (j) =>
+            j.cleanerId === cleanerId &&
+            (j.status === "done" || j.status === "cancelled")
+        )
+        .sort(byScheduleDesc)
     )
   );
 }
@@ -257,7 +311,9 @@ export function useHistoryForCleaner(cleanerId: string): Job[] {
 export function useHistoryForReviewer(reviewerId: string): Job[] {
   return useJobsStore(
     useShallow((s) =>
-      s.jobs.filter((j) => j.reviewerId === reviewerId && j.status === "done")
+      s.jobs
+        .filter((j) => j.reviewerId === reviewerId && j.status === "done")
+        .sort(byScheduleDesc)
     )
   );
 }
