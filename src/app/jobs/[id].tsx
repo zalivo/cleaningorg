@@ -13,6 +13,7 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
+import { EmbeddedMap } from "@/components/embedded-map";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { type JobStatus, formatJobDate } from "@/data/jobs";
 import { openMapsForAddress } from "@/lib/maps";
@@ -132,6 +133,8 @@ export default function JobDetailRoute() {
         <Row icon="shield-checkmark-outline" text={`Reviewer: ${job.reviewerName}`} />
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
       </View>
+
+      <EmbeddedMap address={job.address} height={200} showOpenButton={false} />
 
       {/* ---- Booker actions ---- */}
       {isOwnerBooker && job.status === "ready-to-clean" && (
