@@ -88,7 +88,7 @@ export default function ProfileRoute() {
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.background }}
-      edges={["top"]}
+      edges={[]}
     >
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>

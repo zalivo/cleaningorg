@@ -46,7 +46,7 @@ export default function JobsRoute() {
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.background }}
-      edges={["top"]}
+      edges={[]}
     >
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[styles.title, { color: colors.text }]}>

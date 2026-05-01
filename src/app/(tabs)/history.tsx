@@ -66,7 +66,7 @@ export default function HistoryRoute() {
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.background }}
-      edges={["top"]}
+      edges={[]}
     >
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[styles.title, { color: colors.text }]}>{t("history.title")}</Text>

@@ -11,6 +11,7 @@ export default function Layout() {
   return (
     <ThemeProvider>
       <View style={{ flex: 1 }}>
+        <DemoIdentityDock />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen
@@ -46,7 +47,6 @@ export default function Layout() {
             }}
           />
         </Stack>
-        <DemoIdentityDock />
         <ToastContainer />
         <Confetti />
       </View>

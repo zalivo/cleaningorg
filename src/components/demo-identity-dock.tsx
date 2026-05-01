@@ -10,13 +10,11 @@ import { useT } from "@/lib/i18n";
 import { useActiveIdentity, useIdentityStore } from "@/store/identity";
 
 /**
- * A persistent demo-only "logged in as" pill, mounted at the root of the
- * app so it overlays every screen (tabs, modal book flow, detail screens).
- * Collapsed: shows the active identity's avatar + role. Tap to expand into
- * a switcher; tap an identity to switch + auto-collapse.
- *
- * Sits above the tab bar and below the toast container, so toasts pop on
- * top during state transitions.
+ * A persistent demo-only "logged in as" header, mounted at the root of
+ * the app above the navigation Stack so it sits in the flex tree (not
+ * an overlay) and content beneath naturally flows below it. Collapsed:
+ * shows the active identity's avatar + role. Tap to expand into a
+ * switcher; tap an identity to switch + auto-collapse.
  */
 export function DemoIdentityDock() {
   const { colors } = useTheme();
@@ -39,8 +37,14 @@ export function DemoIdentityDock() {
 
   return (
     <View
-      pointerEvents="box-none"
-      style={[styles.wrapper, { top: insets.top + 6 }]}
+      style={[
+        styles.wrapper,
+        {
+          paddingTop: insets.top + 6,
+          backgroundColor: colors.background,
+          borderBottomColor: colors.border,
+        },
+      ]}
     >
       <View
         style={[
@@ -129,14 +133,10 @@ export function DemoIdentityDock() {
 
 const styles = StyleSheet.create({
   wrapper: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    // top is set inline from safe-area inset
+    paddingHorizontal: 12,
+    paddingBottom: 6,
     alignItems: "center",
-    // Above the tab bar / app chrome, below the toast container (z=1000).
-    zIndex: 900,
-    elevation: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   dock: {
     width: "100%",
@@ -144,10 +144,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
   },
   pill: {
     flexDirection: "row",

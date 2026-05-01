@@ -1,12 +1,19 @@
 import { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND } from "@/constants/colors";
 import type { Job, JobStatus } from "@/data/jobs";
 import { useIdentityStore } from "@/store/identity";
 import { useJobsStore } from "@/store/jobs";
 import { useToastsStore } from "@/store/toasts";
 
+// Approximate height of the collapsed DemoIdentityDock pill (avatar +
+// name/role text + vertical padding). Toasts anchor below it so they
+// don't overlap the always-visible identity header.
+const DOCK_OFFSET = 70;
+
 export function ToastContainer() {
+  const insets = useSafeAreaInsets();
   const toasts = useToastsStore((s) => s.toasts);
   const dismiss = useToastsStore((s) => s.dismiss);
   const push = useToastsStore((s) => s.push);
@@ -48,7 +55,10 @@ export function ToastContainer() {
   }, [push]);
 
   return (
-    <View pointerEvents="box-none" style={styles.container}>
+    <View
+      pointerEvents="box-none"
+      style={[styles.container, { top: insets.top + DOCK_OFFSET }]}
+    >
       {toasts.map((t) => (
         <Pressable
           key={t.id}
@@ -114,7 +124,7 @@ function messageFor(job: Job, activeId: string): string {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 60,
+    // top is set inline from safe-area inset + dock offset
     left: 16,
     right: 16,
     gap: 8,
