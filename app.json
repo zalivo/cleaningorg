@@ -1,5 +1,7 @@
 {
   "expo": {
+    "name": "cleaning-org",
+    "slug": "cleaning-org",
     "icon": "https://agent.expo.app/static/icon.png",
     "orientation": "default",
     "scheme": "acme",
@@ -31,6 +33,13 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "706ca359-624c-449d-a78c-0846921d2566"
+      }
+    },
+    "owner": "cleaning-org"
   }
 }
