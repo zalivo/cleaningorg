@@ -75,6 +75,7 @@ export const en = {
     property: "Property",
     date: "Date",
     time: "Time",
+    when: "When",
     duration: "Duration",
     cleaner: "Cleaner",
     reviewer: "Reviewer",
@@ -86,20 +87,6 @@ export const en = {
     emptyTitle: "No properties yet",
     emptyBody: "Add a property from the Home tab before booking a cleaning.",
     goHome: "Go to Home",
-    dates: {
-      tomorrow: "Tomorrow",
-      "in-2-days": "In 2 days",
-      weekend: "This weekend",
-      "next-week": "Next week",
-    },
-    times: {
-      morning: "Morning",
-      afternoon: "Afternoon",
-      evening: "Evening",
-      "morning-hint": "8am – 12pm",
-      "afternoon-hint": "12pm – 5pm",
-      "evening-hint": "5pm – 9pm",
-    },
     wizard: {
       stepWhereWhen: "Where & When",
       stepWho: "Who",
@@ -122,6 +109,8 @@ export const en = {
       notBookerBody: "Only the property admin can create new bookings. Switch from the Profile tab.",
       bookingFailedTitle: "Booking failed",
       bookingFailedBody: "Selected cleaner or reviewer no longer exists.",
+      pastTimeTitle: "Past time",
+      pastTimeBody: "The scheduled start is in the past. Pick a time in the future.",
     },
   },
   job: {
@@ -181,6 +170,10 @@ export const en = {
       booker: "You haven't booked any cleanings yet. Tap Home → Book a cleaning to get started.",
       cleaner: "No jobs assigned to you.",
       reviewer: "Nothing to review yet.",
+    },
+    modes: {
+      list: "List",
+      week: "Week",
     },
   },
   history: {

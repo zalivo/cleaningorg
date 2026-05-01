@@ -1,29 +1,20 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import { BRAND, BRAND_LIGHT } from "@/constants/colors";
+import { BRAND } from "@/constants/colors";
 import {
   type Job,
-  type JobStatus,
   formatJobWindow,
   formatPrice,
   isJobLate,
 } from "@/data/jobs";
 import { type MessageKey, useT } from "@/lib/i18n";
+import { STATUS_COLORS } from "@/lib/job-status-colors";
 
 interface Props {
   job: Job;
   onPress?: () => void;
 }
-
-const STATUS_COLORS: Record<JobStatus, { bg: string; fg: string }> = {
-  "ready-to-clean": { bg: BRAND_LIGHT, fg: BRAND },
-  cleaning: { bg: "#FEF3C7", fg: "#B45309" },
-  "ready-for-review": { bg: "#DBEAFE", fg: "#1D4ED8" },
-  reviewing: { bg: "#EDE9FE", fg: "#6D28D9" },
-  done: { bg: "#E5E7EB", fg: "#374151" },
-  cancelled: { bg: "#FEE2E2", fg: "#B91C1C" },
-};
 
 export function JobCard({ job, onPress }: Props) {
   const { colors } = useTheme();

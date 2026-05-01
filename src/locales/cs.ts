@@ -74,6 +74,7 @@ export const cs: LocaleMessages = {
     property: "Nemovitost",
     date: "Datum",
     time: "Čas",
+    when: "Kdy",
     duration: "Doba trvání",
     cleaner: "Uklízeč",
     reviewer: "Kontrolor",
@@ -85,20 +86,6 @@ export const cs: LocaleMessages = {
     emptyTitle: "Zatím žádné nemovitosti",
     emptyBody: "Přidej nemovitost na záložce Domů, než si objednáš úklid.",
     goHome: "Přejít domů",
-    dates: {
-      tomorrow: "Zítra",
-      "in-2-days": "Za 2 dny",
-      weekend: "Tento víkend",
-      "next-week": "Příští týden",
-    },
-    times: {
-      morning: "Ráno",
-      afternoon: "Odpoledne",
-      evening: "Večer",
-      "morning-hint": "8:00 – 12:00",
-      "afternoon-hint": "12:00 – 17:00",
-      "evening-hint": "17:00 – 21:00",
-    },
     wizard: {
       stepWhereWhen: "Kde a kdy",
       stepWho: "Kdo",
@@ -121,6 +108,8 @@ export const cs: LocaleMessages = {
       notBookerBody: "Nové objednávky může vytvářet pouze admin. Přepni se v profilu.",
       bookingFailedTitle: "Objednávka selhala",
       bookingFailedBody: "Zvolený uklízeč nebo kontrolor už neexistuje.",
+      pastTimeTitle: "Minulý čas",
+      pastTimeBody: "Plánovaný začátek je v minulosti. Vyberte čas v budoucnosti.",
     },
   },
   job: {
@@ -180,6 +169,10 @@ export const cs: LocaleMessages = {
       booker: "Zatím žádné objednávky. Klepni na Domů → Objednat úklid.",
       cleaner: "Nemáš přiřazené žádné úklidy.",
       reviewer: "Zatím není co kontrolovat.",
+    },
+    modes: {
+      list: "Seznam",
+      week: "Týden",
     },
   },
   history: {
