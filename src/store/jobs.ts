@@ -34,10 +34,11 @@ export interface BookJobInput {
   /** ISO end of the booker-set window. Required, must be after start. */
   scheduledEnd: string;
   /**
-   * Snapshotted total in integer cents. Required — every job carries a
-   * price. Compute with `computePriceCents(cleaner.hourlyRate, start, end)`
-   * at the call site so the value matches the rate × duration shown to the
-   * booker at confirm time.
+   * Snapshotted total in integer minor units (haléře — 1/100 of a koruna).
+   * Required — every job carries a price. Compute with
+   * `computePriceCents(cleaner.hourlyRate, start, end)` at the call site
+   * so the value matches the rate × duration shown to the booker at
+   * confirm time.
    */
   priceCents: number;
   notes?: string;
@@ -251,13 +252,17 @@ export const useJobsStore = create<JobsState>()(
       resetDemo: () => set({ jobs: seedJobs }),
     }),
     {
+      // v6 = currency switched from USD to CZK (Kč). Types are identical to
+      //      v5 but priceCents now means haléře, not US cents, and seed
+      //      values jumped 10× to realistic Czech rates. Bumping the key
+      //      avoids hydrating v5 USD-shaped numbers as if they were CZK.
       // v5 = snapshotted priceCents on every Job (rate × hours at booking).
       // v4 = scheduled/actual time windows on Job (was: single `date`).
       // v3 = added optional latitude/longitude snapshots for the embedded map.
       // v2 = property-based job model (was: service-based with totalPrice).
       // Key bumps orphan old payloads instead of hydrating malformed state
       // into the new types.
-      name: "cleaningorg/jobs.v5",
+      name: "cleaningorg/jobs.v6",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
@@ -347,8 +352,6 @@ interface RoleTotals {
   jobCount: number;
 }
 
-const ZERO_TOTALS: RoleTotals = { totalCents: 0, jobCount: 0 };
-
 function tally(jobs: Job[]): RoleTotals {
   let totalCents = 0;
   for (const j of jobs) totalCents += j.priceCents;
@@ -378,4 +381,3 @@ export function useBookerSpend(bookerId: string): RoleTotals {
 }
 
 export type { RoleTotals };
-export { ZERO_TOTALS };

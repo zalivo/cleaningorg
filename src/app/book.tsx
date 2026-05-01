@@ -19,6 +19,7 @@ import {
   estimatedHours,
   formatJobWindow,
   formatPrice,
+  formatRatePerHour,
 } from "@/data/jobs";
 import { getProfessional, professionals } from "@/data/professionals";
 import { getReviewer, reviewers } from "@/data/reviewers";
@@ -366,7 +367,7 @@ export default function BookRoute() {
             {cleaner && (
               <View style={styles.summaryPriceRow}>
                 <Text style={[styles.summaryBreakdown, { color: colors.text }]}>
-                  ${cleaner.hourlyRate}/hr · {formatHours(hours)}
+                  {formatRatePerHour(cleaner.hourlyRate)} · {formatHours(hours)}
                 </Text>
                 <Text style={[styles.summaryPriceTotal, { color: BRAND }]}>
                   {formatPrice(priceCents)}

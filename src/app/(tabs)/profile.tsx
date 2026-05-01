@@ -35,8 +35,11 @@ export default function ProfileRoute() {
   const resetJobs = useJobsStore((s) => s.resetDemo);
   const resetProperties = usePropertiesStore((s) => s.resetDemo);
 
-  // Both selectors run unconditionally (hooks rules); the unused branch
-  // for the active role just resolves to ZERO_TOTALS.
+  // Both selectors run unconditionally (hooks rules). Each demo identity
+  // is bound to a single role, so the off-role selector's `id` filter
+  // never matches and that branch's totals are { totalCents: 0, jobCount: 0 }
+  // — the React work is small and the alternative (conditional hooks)
+  // would be a rules-of-hooks violation.
   const cleanerEarnings = useCleanerEarnings(identity.id);
   const bookerSpend = useBookerSpend(identity.id);
   const totals =

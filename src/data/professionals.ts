@@ -7,6 +7,7 @@ export interface Professional {
   jobsCompleted: number;
   bio: string;
   specialties: ServiceId[];
+  /** Whole korunas per hour (CZK). */
   hourlyRate: number;
   yearsExperience: number;
   avatarColor: string;
@@ -20,7 +21,7 @@ export const professionals: Professional[] = [
     jobsCompleted: 312,
     bio: "Detail-oriented cleaner with 8 years of experience in residential homes. Loves a sparkling kitchen.",
     specialties: ["standard", "deep"],
-    hourlyRate: 35,
+    hourlyRate: 350,
     yearsExperience: 8,
     avatarColor: "#F87171",
   },
@@ -31,7 +32,7 @@ export const professionals: Professional[] = [
     jobsCompleted: 198,
     bio: "Specialist in post-construction and move-out cleans. Eco-friendly products only.",
     specialties: ["post-construction", "move-out"],
-    hourlyRate: 45,
+    hourlyRate: 450,
     yearsExperience: 5,
     avatarColor: "#60A5FA",
   },
@@ -42,7 +43,7 @@ export const professionals: Professional[] = [
     jobsCompleted: 421,
     bio: "Top-rated pro. Office cleaning specialist with night-shift availability.",
     specialties: ["office", "standard"],
-    hourlyRate: 40,
+    hourlyRate: 400,
     yearsExperience: 10,
     avatarColor: "#34D399",
   },
@@ -53,7 +54,7 @@ export const professionals: Professional[] = [
     jobsCompleted: 156,
     bio: "Reliable and friendly. Pet-owner friendly. Available evenings and weekends.",
     specialties: ["standard", "deep"],
-    hourlyRate: 32,
+    hourlyRate: 320,
     yearsExperience: 4,
     avatarColor: "#FBBF24",
   },
@@ -64,7 +65,7 @@ export const professionals: Professional[] = [
     jobsCompleted: 287,
     bio: "Bilingual (English/Spanish). Specializes in deep cleans and allergy-sensitive homes.",
     specialties: ["deep", "standard"],
-    hourlyRate: 38,
+    hourlyRate: 380,
     yearsExperience: 6,
     avatarColor: "#A78BFA",
   },

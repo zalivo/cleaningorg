@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { ProAvatar } from "@/components/pro-avatar";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
+import { formatRatePerHour } from "@/data/jobs";
 import { getProfessional } from "@/data/professionals";
 import { getService } from "@/data/services";
 
@@ -42,7 +43,7 @@ export default function ProDetailRoute() {
 
       <View style={styles.statsRow}>
         <Stat label="Experience" value={`${pro.yearsExperience} yrs`} />
-        <Stat label="Rate" value={`$${pro.hourlyRate}/hr`} />
+        <Stat label="Rate" value={formatRatePerHour(pro.hourlyRate)} />
         <Stat label="Rating" value={pro.rating.toFixed(1)} />
       </View>
 
