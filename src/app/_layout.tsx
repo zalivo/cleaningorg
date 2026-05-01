@@ -1,4 +1,5 @@
 import { Confetti } from "@/components/confetti";
+import { DemoIdentityDock } from "@/components/demo-identity-dock";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastContainer } from "@/components/toast";
 import { useT } from "@/lib/i18n";
@@ -45,6 +46,7 @@ export default function Layout() {
             }}
           />
         </Stack>
+        <DemoIdentityDock />
         <ToastContainer />
         <Confetti />
       </View>
