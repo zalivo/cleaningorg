@@ -2,9 +2,20 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 import { Tabs } from "expo-router";
 import { BRAND } from "@/constants/colors";
+import { useActiveIdentity } from "@/store/identity";
 
 export default function TabsLayout() {
   const { colors } = useTheme();
+  const identity = useActiveIdentity();
+  const role = identity.role;
+
+  const jobsLabel =
+    role === "booker"
+      ? "My Bookings"
+      : role === "cleaner"
+        ? "My Jobs"
+        : "To Review";
+
   return (
     <Tabs
       screenOptions={{
@@ -21,17 +32,28 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Home",
+          href: role === "booker" ? "/" : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
-        name="bookings"
+        name="jobs"
         options={{
-          title: "Bookings",
+          title: jobsLabel,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          href: role === "booker" ? null : "/history",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time-outline" color={color} size={size} />
           ),
         }}
       />
