@@ -181,4 +181,7 @@ export const sk: LocaleMessages = {
   },
   late: "Po termíne",
   ok: "OK",
+  card: {
+    cleanerAndReviewer: "{cleaner} · kontrolór {reviewer}",
+  },
 };

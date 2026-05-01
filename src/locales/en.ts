@@ -182,6 +182,9 @@ export const en = {
   },
   late: "Late",
   ok: "OK",
+  card: {
+    cleanerAndReviewer: "{cleaner} · reviewer {reviewer}",
+  },
 };
 
 // Widen literal string types so that other locale files can supply

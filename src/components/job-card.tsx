@@ -63,7 +63,10 @@ export function JobCard({ job, onPress }: Props) {
       <View style={styles.row}>
         <Ionicons name="person-circle-outline" size={16} color={colors.text} />
         <Text style={[styles.meta, { color: colors.text }]}>
-          {job.cleanerName} · reviewer {job.reviewerName}
+          {t("card.cleanerAndReviewer", {
+            cleaner: job.cleanerName,
+            reviewer: job.reviewerName,
+          })}
         </Text>
       </View>
       <View style={styles.row}>
