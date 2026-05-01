@@ -502,18 +502,31 @@ export interface PropertyHistory {
 
 /**
  * Per-property aggregate of booking outcomes. Derived from `jobs` and
- * `ratings`; no new persistent state. Returns zeroes / nulls for an
- * unknown propertyId rather than `undefined` so callers can render
- * unconditionally.
+ * `ratings`; no new persistent state.
+ *
+ * Cross-store: this hook composes two `useShallow` subscriptions — one
+ * against the jobs store (to filter the property's `done` set) and one
+ * against the ratings store (to pull the scores for those jobs). The
+ * import direction is one-way (`store/jobs.ts` imports
+ * `store/ratings.ts`), so there's no risk of a cycle. Each selector
+ * returns shallow-equal arrays when nothing relevant moves, so rating
+ * additions on other properties don't re-render this card.
+ *
+ * Returns zeroes / nulls for an unknown propertyId rather than
+ * `undefined` so callers can render unconditionally.
  */
 export function usePropertyHistory(propertyId: string): PropertyHistory {
-  // First sub: just the done jobs that belong to this property.
-  const jobs = useJobsForPropertyDone(propertyId);
+  const jobs = useJobsStore(
+    useShallow((s) =>
+      s.jobs.filter(
+        (j) => j.propertyId === propertyId && j.status === "done"
+      )
+    )
+  );
 
-  // Second sub: rating scores attached to those jobs. The set of jobIds
-  // changes only when the filtered list above changes, so the closure
-  // gets a fresh reference but `useShallow`'s element-wise compare keeps
-  // the result reference stable when nothing relevant has moved.
+  // The set of jobIds is recomputed each render but `useShallow`'s
+  // element-wise compare on the ratings result keeps the reference
+  // stable when no rating in the matching set has changed.
   const jobIdSet = new Set(jobs.map((j) => j.id));
   const ratingScores = useRatingsStore(
     useShallow((s) =>
@@ -548,17 +561,6 @@ export function usePropertyHistory(propertyId: string): PropertyHistory {
     averageRating,
     totalSpendCents,
   };
-}
-
-/** Shared between usePropertyHistory and any caller that wants just the done set. */
-function useJobsForPropertyDone(propertyId: string): Job[] {
-  return useJobsStore(
-    useShallow((s) =>
-      s.jobs.filter(
-        (j) => j.propertyId === propertyId && j.status === "done"
-      )
-    )
-  );
 }
 
 /**
