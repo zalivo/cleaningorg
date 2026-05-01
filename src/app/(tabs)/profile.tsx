@@ -65,9 +65,14 @@ export default function ProfileRoute() {
           </View>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Demo identity
-        </Text>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Demo identity
+          </Text>
+          <Text style={[styles.sectionHint, { color: colors.text }]}>
+            Tap to switch between booker, cleaner, and reviewer views.
+          </Text>
+        </View>
         <View style={styles.identityList}>
           {identities.map((i) => {
             const active = i.id === identity.id;
@@ -141,6 +146,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
+  sectionHeader: { gap: 4 },
   sectionTitle: {
     fontSize: 14,
     fontWeight: "600",
@@ -148,6 +154,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     letterSpacing: 0.5,
   },
+  sectionHint: { fontSize: 13, opacity: 0.65 },
   identityList: { gap: 10 },
   identityCard: {
     flexDirection: "row",
