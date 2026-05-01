@@ -103,6 +103,7 @@ export const en = {
     reviewerLabel: "Reviewer: {name}",
     declinedBanner: "Declined {count}× — last reason: {reason}",
     declinedShort: "Declined {count}× — {reason}",
+    cleanedShort: "Re-cleaned {count}×",
     started: "Started: {when}",
     total: "Total: {price}",
     actions: {
@@ -113,6 +114,7 @@ export const en = {
       cancelDestructive: "Cancel booking",
       startCleaning: "Start cleaning",
       finishCleaning: "Mark ready for review",
+      finishCleaningNeedsPhoto: "Add a photo to mark ready",
       startReview: "Start review",
       approve: "Approve",
       decline: "Decline",

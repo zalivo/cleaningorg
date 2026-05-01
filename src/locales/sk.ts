@@ -102,6 +102,7 @@ export const sk: LocaleMessages = {
     reviewerLabel: "Kontrolór: {name}",
     declinedBanner: "Zamietnuté {count}× — posledný dôvod: {reason}",
     declinedShort: "Zamietnuté {count}× — {reason}",
+    cleanedShort: "Prerobené {count}×",
     started: "Začiatok: {when}",
     total: "Spolu: {price}",
     actions: {
@@ -112,6 +113,7 @@ export const sk: LocaleMessages = {
       cancelDestructive: "Zrušiť objednávku",
       startCleaning: "Začať upratanie",
       finishCleaning: "Odovzdať na kontrolu",
+      finishCleaningNeedsPhoto: "Pridaj fotku pre odovzdanie na kontrolu",
       startReview: "Začať kontrolu",
       approve: "Schváliť",
       decline: "Zamietnuť",

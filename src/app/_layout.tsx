@@ -1,3 +1,4 @@
+import { Confetti } from "@/components/confetti";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastContainer } from "@/components/toast";
 import { Stack } from "expo-router";
@@ -31,6 +32,7 @@ export default function Layout() {
           />
         </Stack>
         <ToastContainer />
+        <Confetti />
       </View>
     </ThemeProvider>
   );

@@ -48,10 +48,20 @@ export function JobCard({ job, onPress }: Props) {
         <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
           {job.propertyName}
         </Text>
-        <View style={[styles.pill, { backgroundColor: status.bg }]}>
-          <Text style={[styles.pillText, { color: status.fg }]}>
-            {statusLabel}
-          </Text>
+        <View style={styles.headerPills}>
+          <View style={[styles.pill, { backgroundColor: status.bg }]}>
+            <Text style={[styles.pillText, { color: status.fg }]}>
+              {statusLabel}
+            </Text>
+          </View>
+          {job.declineCount > 0 &&
+            !(job.status === "ready-to-clean" && job.declineReason) && (
+              <View style={styles.rePill}>
+                <Text style={styles.rePillText}>
+                  {t("job.cleanedShort", { count: job.declineCount })}
+                </Text>
+              </View>
+            )}
         </View>
       </View>
       <View style={styles.row}>
@@ -84,17 +94,19 @@ export function JobCard({ job, onPress }: Props) {
           </View>
         )}
       </View>
-      {job.declineCount > 0 && (
-        <View style={[styles.row, styles.declineRow]}>
-          <Ionicons name="alert-circle-outline" size={14} color="#B91C1C" />
-          <Text style={styles.declineText} numberOfLines={2}>
-            {t("job.declinedShort", {
-              count: job.declineCount,
-              reason: job.declineReason ?? "",
-            })}
-          </Text>
-        </View>
-      )}
+      {job.status === "ready-to-clean" &&
+        job.declineCount > 0 &&
+        job.declineReason && (
+          <View style={[styles.row, styles.declineRow]}>
+            <Ionicons name="alert-circle-outline" size={14} color="#B91C1C" />
+            <Text style={styles.declineText} numberOfLines={2}>
+              {t("job.declinedShort", {
+                count: job.declineCount,
+                reason: job.declineReason,
+              })}
+            </Text>
+          </View>
+        )}
       <View style={styles.priceRow}>
         <Text style={[styles.price, { color: BRAND }]}>
           {formatPrice(job.priceCents)}
@@ -118,8 +130,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: { fontSize: 16, fontWeight: "600", flex: 1, paddingRight: 8 },
+  headerPills: { flexDirection: "row", alignItems: "center", gap: 6 },
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
   pillText: { fontSize: 11, fontWeight: "600" },
+  rePill: {
+    backgroundColor: "#E0E7FF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  rePillText: { fontSize: 11, fontWeight: "600", color: "#3730A3" },
   row: { flexDirection: "row", alignItems: "center", gap: 6 },
   meta: { fontSize: 13, opacity: 0.85, flex: 1 },
   latePill: {

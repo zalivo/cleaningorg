@@ -13,6 +13,7 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { EmbeddedMap } from "@/components/embedded-map";
 import { NoteComposer } from "@/components/note-composer";
 import { NoteRow } from "@/components/note-row";
@@ -28,6 +29,7 @@ import {
 } from "@/data/jobs";
 import { type MessageKey, useT } from "@/lib/i18n";
 import { openMapsForAddress } from "@/lib/maps";
+import { useCelebrateStore } from "@/store/celebrate";
 import { useActiveIdentity } from "@/store/identity";
 import { useJob, useJobsStore } from "@/store/jobs";
 
@@ -136,23 +138,37 @@ export default function JobDetailRoute() {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={[styles.statusPill, { backgroundColor: status.bg }]}>
-        <Text style={[styles.statusText, { color: status.fg }]}>
-          {statusLabel}
-        </Text>
+      <View style={styles.statusRow}>
+        <Animated.View
+          key={job.status}
+          entering={FadeIn.duration(280)}
+          style={[styles.statusPill, { backgroundColor: status.bg }]}
+        >
+          <Text style={[styles.statusText, { color: status.fg }]}>
+            {statusLabel}
+          </Text>
+        </Animated.View>
+        {job.declineCount > 0 &&
+          !(job.status === "ready-to-clean" && job.declineReason) && (
+            <Text style={styles.recleanedPill}>
+              {t("job.cleanedShort", { count: job.declineCount })}
+            </Text>
+          )}
       </View>
 
-      {job.declineCount > 0 && job.declineReason && (
-        <View style={styles.declineBanner}>
-          <Ionicons name="alert-circle" size={16} color="#B91C1C" />
-          <Text style={styles.declineText}>
-            {t("job.declinedBanner", {
-              count: job.declineCount,
-              reason: job.declineReason,
-            })}
-          </Text>
-        </View>
-      )}
+      {job.status === "ready-to-clean" &&
+        job.declineCount > 0 &&
+        job.declineReason && (
+          <View style={styles.declineBanner}>
+            <Ionicons name="alert-circle" size={16} color="#B91C1C" />
+            <Text style={styles.declineText}>
+              {t("job.declinedBanner", {
+                count: job.declineCount,
+                reason: job.declineReason,
+              })}
+            </Text>
+          </View>
+        )}
 
       <Text style={[styles.title, { color: colors.text }]}>
         {job.propertyName}
@@ -235,20 +251,41 @@ export default function JobDetailRoute() {
           <Text style={styles.btnPrimaryText}>{t("job.actions.startCleaning")}</Text>
         </Pressable>
       )}
-      {isAssignedCleaner && job.status === "cleaning" && (
-        <Pressable
-          onPress={() => {
-            finishCleaning(jobId);
-            router.back();
-          }}
-          style={({ pressed }) => [
-            styles.btnPrimary,
-            { opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Text style={styles.btnPrimaryText}>{t("job.actions.finishCleaning")}</Text>
-        </Pressable>
-      )}
+      {isAssignedCleaner && job.status === "cleaning" && (() => {
+        const hasPhotoEvidence = cleanerNotes.some((n) => !!n.photoUri);
+        return (
+          <>
+            <Pressable
+              disabled={!hasPhotoEvidence}
+              onPress={() => {
+                finishCleaning(jobId);
+                router.back();
+              }}
+              style={({ pressed }) => [
+                styles.btnPrimary,
+                {
+                  opacity: !hasPhotoEvidence ? 0.4 : pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              <Text style={styles.btnPrimaryText}>{t("job.actions.finishCleaning")}</Text>
+            </Pressable>
+            {!hasPhotoEvidence && (
+              <Text
+                style={{
+                  fontSize: 13,
+                  opacity: 0.6,
+                  textAlign: "center",
+                  color: colors.text,
+                  marginTop: -4,
+                }}
+              >
+                {t("job.actions.finishCleaningNeedsPhoto")}
+              </Text>
+            )}
+          </>
+        );
+      })()}
 
       {/* ---- Reviewer actions ---- */}
       {isAssignedReviewer && job.status === "ready-for-review" && (
@@ -267,6 +304,7 @@ export default function JobDetailRoute() {
           <Pressable
             onPress={() => {
               approve(jobId);
+              useCelebrateStore.getState().triggerOnce();
               router.back();
             }}
             style={({ pressed }) => [
@@ -473,6 +511,11 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     letterSpacing: 0.5,
   },
+  statusRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
   statusPill: {
     alignSelf: "flex-start",
     paddingHorizontal: 12,
@@ -480,6 +523,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusText: { fontSize: 12, fontWeight: "700" },
+  recleanedPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E0E7FF",
+    color: "#3730A3",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: "600",
+    overflow: "hidden",
+  },
   declineBanner: {
     flexDirection: "row",
     alignItems: "center",
