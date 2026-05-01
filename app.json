@@ -10,6 +10,7 @@
       "output": "server"
     },
     "android": {
+      "package": "com.glenn032.cleaningorg",
       "predictiveBackGestureEnabled": false
     },
     "experiments": {
@@ -42,7 +43,10 @@
     },
     "owner": "cleaning-org",
     "ios": {
-      "bundleIdentifier": "com.glenn032.cleaning-org"
+      "bundleIdentifier": "com.glenn032.cleaning-org",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }
