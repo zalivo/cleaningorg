@@ -16,11 +16,15 @@ export default function Layout() {
         />
         <Stack.Screen
           name="pros/[id]"
-          options={{ headerShown: true, title: "" }}
+          options={{ headerShown: true, title: "", headerBackTitle: "Back" }}
         />
         <Stack.Screen
           name="jobs/[id]"
-          options={{ headerShown: true, title: "Job Details" }}
+          options={{
+            headerShown: true,
+            title: "Job Details",
+            headerBackTitle: "Back",
+          }}
         />
       </Stack>
     </ThemeProvider>
