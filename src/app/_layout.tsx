@@ -40,8 +40,8 @@ export default function Layout() {
             name="properties/[id]"
             options={{
               headerShown: true,
-              title: "Property",
-              headerBackTitle: "Back",
+              title: t("property.detailTitle"),
+              headerBackTitle: t("job.actions.back"),
             }}
           />
         </Stack>

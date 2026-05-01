@@ -52,6 +52,7 @@ export const sk: LocaleMessages = {
     keep: "Ponechať",
     delete: "Vymazať",
     deleteButton: "Vymazať nehnuteľnosť",
+    detailTitle: "Nehnuteľnosť",
     notFoundTitle: "Nehnuteľnosť sa nenašla",
     notFoundBody: "Mohla byť odstránená alebo patrí inému účtu.",
     backHome: "Späť domov",

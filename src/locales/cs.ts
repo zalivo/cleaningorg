@@ -52,6 +52,7 @@ export const cs: LocaleMessages = {
     keep: "Ponechat",
     delete: "Smazat",
     deleteButton: "Smazat nemovitost",
+    detailTitle: "Nemovitost",
     notFoundTitle: "Nemovitost nenalezena",
     notFoundBody: "Mohla být smazána nebo patří jinému účtu.",
     backHome: "Zpět domů",

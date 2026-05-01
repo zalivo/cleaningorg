@@ -53,6 +53,7 @@ export const en = {
     keep: "Keep",
     delete: "Delete",
     deleteButton: "Delete property",
+    detailTitle: "Property",
     notFoundTitle: "Property not found",
     notFoundBody: "It may have been deleted, or it belongs to a different account.",
     backHome: "Back to Home",
