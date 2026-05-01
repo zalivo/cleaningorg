@@ -11,6 +11,13 @@ export interface ChecklistItem {
   done: boolean;
 }
 
+export interface Note {
+  id: string;
+  text?: string;
+  photoUri?: string;
+  createdAt: string; // ISO
+}
+
 export interface Job {
   id: string;
   propertyId: string;
@@ -30,6 +37,8 @@ export interface Job {
   photoUri?: string;
   declineReason?: string;
   declineCount: number;
+  cleanerNotes?: Note[];
+  reviewerNotes?: Note[];
   createdAt: string;    // ISO
 }
 
@@ -74,6 +83,13 @@ export const seedJobs: Job[] = [
       { room: "Bedrooms", done: true },
     ],
     declineCount: 0,
+    cleanerNotes: [
+      {
+        id: "n-seed-1",
+        text: "Found a cracked tile in the master bathroom — left it as-is, please flag with the owner.",
+        createdAt: "2026-05-02T11:30:00.000Z",
+      },
+    ],
     createdAt: "2026-04-30T08:00:00.000Z",
   },
   {
@@ -92,6 +108,13 @@ export const seedJobs: Job[] = [
     notes: "Reception will let the cleaner in. After-hours only.",
     status: "done",
     declineCount: 0,
+    reviewerNotes: [
+      {
+        id: "n-seed-2",
+        text: "All clear — desks and breakroom looked great.",
+        createdAt: "2026-04-15T20:15:00.000Z",
+      },
+    ],
     createdAt: "2026-04-14T08:00:00.000Z",
   },
 ];

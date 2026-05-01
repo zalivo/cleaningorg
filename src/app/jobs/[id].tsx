@@ -14,6 +14,8 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { EmbeddedMap } from "@/components/embedded-map";
+import { NoteComposer } from "@/components/note-composer";
+import { NoteRow } from "@/components/note-row";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { type JobStatus, formatJobDate } from "@/data/jobs";
 import { openMapsForAddress } from "@/lib/maps";
@@ -41,6 +43,8 @@ export default function JobDetailRoute() {
   const startReview = useJobsStore((s) => s.startReview);
   const approve = useJobsStore((s) => s.approve);
   const decline = useJobsStore((s) => s.decline);
+  const addCleanerNote = useJobsStore((s) => s.addCleanerNote);
+  const addReviewerNote = useJobsStore((s) => s.addReviewerNote);
 
   const [declineMode, setDeclineMode] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
@@ -61,6 +65,13 @@ export default function JobDetailRoute() {
     identity.role === "reviewer" && identity.id === job.reviewerId;
   const isOwnerBooker =
     identity.role === "booker" && identity.id === job.bookerId;
+
+  const cleanerNotes = job.cleanerNotes ?? [];
+  const reviewerNotes = job.reviewerNotes ?? [];
+  const showCleanerComposer =
+    isAssignedCleaner && job.status === "cleaning";
+  const showReviewerComposer =
+    isAssignedReviewer && job.status === "reviewing" && !declineMode;
 
   function confirmCancel() {
     const ok = () => {
@@ -287,6 +298,50 @@ export default function JobDetailRoute() {
           </View>
         </View>
       )}
+
+      {/* ---- Cleaner notes ---- */}
+      <View style={styles.notesSection}>
+        <Text style={[styles.notesTitle, { color: colors.text }]}>
+          Cleaner notes
+        </Text>
+        {cleanerNotes.length === 0 ? (
+          <Text style={[styles.notesEmpty, { color: colors.text }]}>
+            No cleaner notes yet.
+          </Text>
+        ) : (
+          cleanerNotes.map((n) => (
+            <NoteRow key={n.id} note={n} authorLabel={job.cleanerName} />
+          ))
+        )}
+        {showCleanerComposer && (
+          <NoteComposer
+            placeholder="Note for the reviewer..."
+            onSubmit={(input) => addCleanerNote(jobId, input)}
+          />
+        )}
+      </View>
+
+      {/* ---- Reviewer notes ---- */}
+      <View style={styles.notesSection}>
+        <Text style={[styles.notesTitle, { color: colors.text }]}>
+          Reviewer notes
+        </Text>
+        {reviewerNotes.length === 0 ? (
+          <Text style={[styles.notesEmpty, { color: colors.text }]}>
+            No reviewer notes yet.
+          </Text>
+        ) : (
+          reviewerNotes.map((n) => (
+            <NoteRow key={n.id} note={n} authorLabel={job.reviewerName} />
+          ))
+        )}
+        {showReviewerComposer && (
+          <NoteComposer
+            placeholder="Note for the cleaner..."
+            onSubmit={(input) => addReviewerNote(jobId, input)}
+          />
+        )}
+      </View>
     </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -415,4 +470,7 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     fontSize: 14,
   },
+  notesSection: { gap: 8 },
+  notesTitle: { fontSize: 16, fontWeight: "700", marginTop: 8 },
+  notesEmpty: { fontSize: 13, opacity: 0.6 },
 });
