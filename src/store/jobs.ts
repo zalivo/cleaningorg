@@ -5,6 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import {
   type ChecklistItem,
   type Job,
+  type Note,
   seedJobs,
 } from "@/data/jobs";
 import { getService, type ServiceId } from "@/data/services";
@@ -29,6 +30,11 @@ export interface BookJobInput {
   notes?: string;
 }
 
+export interface NoteInput {
+  text?: string;
+  photoUri?: string;
+}
+
 interface JobsState {
   jobs: Job[];
   bookJob: (input: BookJobInput) => Job;
@@ -40,7 +46,21 @@ interface JobsState {
   cancel: (jobId: string) => void;
   toggleChecklist: (jobId: string, room: string) => void;
   setPhoto: (jobId: string, uri: string) => void;
+  addCleanerNote: (jobId: string, input: NoteInput) => void;
+  addReviewerNote: (jobId: string, input: NoteInput) => void;
   resetDemo: () => void;
+}
+
+function buildNote(input: NoteInput): Note | null {
+  const text = input.text?.trim();
+  const photoUri = input.photoUri;
+  if (!text && !photoUri) return null;
+  return {
+    id: `n${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+    text: text || undefined,
+    photoUri: photoUri || undefined,
+    createdAt: new Date().toISOString(),
+  };
 }
 
 function patch(jobs: Job[], jobId: string, fn: (j: Job) => Partial<Job>): Job[] {
@@ -144,6 +164,26 @@ export const useJobsStore = create<JobsState>()(
           jobs: patch(s.jobs, jobId, (j) =>
             j.status === "cleaning" ? { photoUri: uri } : {}
           ),
+        }));
+      },
+      addCleanerNote: (jobId, input) => {
+        const note = buildNote(input);
+        if (!note) return;
+        set((s) => ({
+          jobs: patch(s.jobs, jobId, (j) => {
+            if (j.status !== "cleaning") return {};
+            return { cleanerNotes: [...(j.cleanerNotes ?? []), note] };
+          }),
+        }));
+      },
+      addReviewerNote: (jobId, input) => {
+        const note = buildNote(input);
+        if (!note) return;
+        set((s) => ({
+          jobs: patch(s.jobs, jobId, (j) => {
+            if (j.status !== "reviewing") return {};
+            return { reviewerNotes: [...(j.reviewerNotes ?? []), note] };
+          }),
         }));
       },
       resetDemo: () => set({ jobs: seedJobs }),
