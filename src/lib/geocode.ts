@@ -3,12 +3,13 @@
  *
  * Uses OpenStreetMap's free Nominatim service so we don't have to manage
  * an API key for a hackathon-grade demo. Returns `null` on any failure
- * (network, no match, malformed response) — the caller should fall back
- * to address-only display in that case rather than blocking the save.
+ * (network, timeout, no match, malformed response) — the caller should
+ * fall back to address-only display rather than blocking the save.
  *
  * Nominatim's usage policy asks for a descriptive User-Agent and a low
- * QPS; the booking form only fires on save, which keeps us comfortably
- * inside the 1 req/sec ceiling. See https://operations.osmfoundation.org/policies/nominatim/
+ * QPS; the booking/property forms only fire on save, which keeps us
+ * comfortably inside the 1 req/sec ceiling. See
+ * https://operations.osmfoundation.org/policies/nominatim/
  */
 export interface GeocodeResult {
   latitude: number;
@@ -32,9 +33,9 @@ export async function geocodeAddress(
     query
   )}&format=json&limit=1&addressdetails=0`;
 
-  // Bound the round-trip so a stalled Nominatim can't lock the booking
-  // form's "Looking up address…" state forever. On timeout we fall through
-  // to the catch and return null; the caller saves without coords.
+  // Bound the round-trip so a stalled Nominatim can't lock the form's
+  // "Looking up address…" state forever. On timeout we fall through to
+  // the catch and return null; the caller saves without coords.
   const controller = new AbortController();
   const timer = setTimeout(
     () => controller.abort(),
@@ -63,8 +64,8 @@ export async function geocodeAddress(
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
       return null;
     }
-    // Round to 4 decimal places (~10 m) so persisted demo data isn't
-    // littered with 7-decimal noise that's well below map zoom precision.
+    // Round to 4 decimal places (~10 m) so persisted demo state isn't
+    // littered with 7-decimal noise far below map zoom precision.
     return {
       latitude: round4(latitude),
       longitude: round4(longitude),

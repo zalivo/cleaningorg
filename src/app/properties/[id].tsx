@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { EmbeddedMap } from "@/components/embedded-map";
 import { BRAND } from "@/constants/colors";
+import { geocodeAddress } from "@/lib/geocode";
 import { openMapsForAddress } from "@/lib/maps";
 import { useActiveIdentity } from "@/store/identity";
 import { useProperty, usePropertiesStore } from "@/store/properties";
@@ -34,6 +35,7 @@ export default function PropertyDetailRoute() {
   const [name, setName] = useState(property?.name ?? "");
   const [address, setAddress] = useState(property?.address ?? "");
   const [notes, setNotes] = useState(property?.notes ?? "");
+  const [saving, setSaving] = useState(false);
 
   // Property tab is admin-only; mirror the Home tab's role gate.
   if (identity.role !== "booker") {
@@ -83,21 +85,40 @@ export default function PropertyDetailRoute() {
 
   function cancelEdit() {
     setEditing(false);
+    setSaving(false);
   }
 
-  function save() {
+  async function save() {
     if (!property) return;
     if (!name.trim())
       return notify("Name required", "Give the property a short name.");
     if (!address.trim())
       return notify("Address required", "Type the address.");
+    if (saving) return; // double-tap guard
 
-    updateProperty(property.id, {
-      name: name.trim(),
-      address: address.trim(),
-      notes: notes.trim() || undefined,
-    });
-    setEditing(false);
+    const trimmedName = name.trim();
+    const trimmedAddress = address.trim();
+    const trimmedNotes = notes.trim() || undefined;
+    // Only re-geocode when the address actually changed; renaming a
+    // property or editing notes shouldn't trigger a network round-trip.
+    const addressChanged = property.address !== trimmedAddress;
+    setSaving(true);
+    try {
+      const coords = addressChanged
+        ? await geocodeAddress(trimmedAddress)
+        : null;
+      updateProperty(property.id, {
+        name: trimmedName,
+        address: trimmedAddress,
+        notes: trimmedNotes,
+        ...(addressChanged
+          ? { latitude: coords?.latitude, longitude: coords?.longitude }
+          : {}),
+      });
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function confirmDelete() {
@@ -158,6 +179,7 @@ export default function PropertyDetailRoute() {
             name={name}
             address={address}
             notes={notes}
+            saving={saving}
             onChangeName={setName}
             onChangeAddress={setAddress}
             onChangeNotes={setNotes}
@@ -249,6 +271,7 @@ function EditView({
   name,
   address,
   notes,
+  saving,
   onChangeName,
   onChangeAddress,
   onChangeNotes,
@@ -258,6 +281,7 @@ function EditView({
   name: string;
   address: string;
   notes: string;
+  saving: boolean;
   onChangeName: (v: string) => void;
   onChangeAddress: (v: string) => void;
   onChangeNotes: (v: string) => void;
@@ -328,9 +352,13 @@ function EditView({
       <View style={styles.formButtons}>
         <Pressable
           onPress={onCancel}
+          disabled={saving}
           style={({ pressed }) => [
             styles.btnGhost,
-            { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+            {
+              borderColor: colors.border,
+              opacity: saving ? 0.4 : pressed ? 0.7 : 1,
+            },
           ]}
         >
           <Text style={[styles.btnGhostText, { color: colors.text }]}>
@@ -339,13 +367,19 @@ function EditView({
         </Pressable>
         <Pressable
           onPress={onSave}
+          disabled={saving}
           style={({ pressed }) => [
             styles.btnPrimary,
             styles.btnPrimaryFlex,
-            { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
+            {
+              backgroundColor: BRAND,
+              opacity: saving ? 0.6 : pressed ? 0.85 : 1,
+            },
           ]}
         >
-          <Text style={styles.btnPrimaryText}>Save changes</Text>
+          <Text style={styles.btnPrimaryText}>
+            {saving ? "Looking up address…" : "Save changes"}
+          </Text>
         </Pressable>
       </View>
     </View>

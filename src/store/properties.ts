@@ -10,8 +10,8 @@ export interface AddPropertyInput {
   notes?: string;
   ownerId: string;
   /**
-   * Optional coordinates. The booking flow expects callers (the home
-   * form) to pre-resolve these via `geocodeAddress` so the store stays
+   * Optional coordinates. Callers (the home form, the property detail
+   * editor) pre-resolve these via `geocodeAddress` so the store stays
    * synchronous. `undefined` is a valid value when geocoding fails — the
    * embedded map degrades to its address-only view.
    */
