@@ -41,3 +41,11 @@ app-example
 # generated native folders
 /ios
 /android
+
+# agent-device outputs
+artifacts/
+dogfood-output/
+.agent-device/
+
+# EAS
+.eas/
