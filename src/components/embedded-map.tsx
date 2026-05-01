@@ -1,5 +1,5 @@
 import { useTheme } from "@react-navigation/native";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -64,6 +64,11 @@ interface MapTarget {
   describe: string;
 }
 
+/**
+ * Build a MapTarget from inputs. `address` must already be trimmed (or
+ * undefined) — callers normalize once at the component boundary so the
+ * memoization key is the post-trim value.
+ */
 function resolveTarget({
   address,
   latitude,
@@ -84,16 +89,15 @@ function resolveTarget({
       describe: `${latitude}, ${longitude}`,
     };
   }
-  const trimmed = address?.trim();
-  if (trimmed) {
+  if (address) {
     return {
       url: `https://www.google.com/maps?q=${encodeURIComponent(
-        trimmed
+        address
       )}&z=${zoom}&output=embed`,
       open: () => {
-        void openMapsForAddress(trimmed);
+        void openMapsForAddress(address);
       },
-      describe: trimmed,
+      describe: address,
     };
   }
   return undefined;
@@ -122,18 +126,31 @@ export function EmbeddedMap({
   longitude,
   zoom = ZOOM_DEFAULT,
   height = 200,
-  showOpenButton,
+  showOpenButton = true,
   style,
   accessibilityLabel,
 }: EmbeddedMapProps) {
   const { colors } = useTheme();
+  const trimmedAddress = address?.trim() || undefined;
   const safeZoom = clamp(Math.round(zoom), ZOOM_MIN, ZOOM_MAX);
   const target = useMemo(
-    () => resolveTarget({ address, latitude, longitude, zoom: safeZoom }),
-    [address, latitude, longitude, safeZoom]
+    () =>
+      resolveTarget({
+        address: trimmedAddress,
+        latitude,
+        longitude,
+        zoom: safeZoom,
+      }),
+    [trimmedAddress, latitude, longitude, safeZoom]
   );
 
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  // Reset the web loading overlay whenever the URL changes (e.g. navigating
+  // between job details with different addresses) so the spinner reappears
+  // for the new fetch instead of staying stuck on the previous "loaded".
+  useEffect(() => {
+    setIframeLoaded(false);
+  }, [target?.url]);
 
   if (!target) {
     return (
@@ -152,8 +169,6 @@ export function EmbeddedMap({
       </View>
     );
   }
-
-  const showButton = showOpenButton ?? true;
 
   return (
     <View
@@ -201,7 +216,7 @@ export function EmbeddedMap({
         </View>
       )}
 
-      {showButton && (
+      {showOpenButton && (
         <Pressable
           onPress={target.open}
           accessibilityRole="button"
