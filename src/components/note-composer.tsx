@@ -34,22 +34,27 @@ export function NoteComposer({
     if (picking) return;
     setPicking(true);
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (perm.status !== "granted") {
-        if (Platform.OS !== "web") {
-          Alert.alert(
-            "Photo access needed",
-            "Allow photo library access in Settings to attach a photo."
-          );
-        }
-        return;
-      }
+      // iOS 14+ uses PHPickerViewController under the hood, which presents
+      // a system picker without needing media library permission — the
+      // user explicitly hands us each selected asset. Calling
+      // requestMediaLibraryPermissionsAsync here returned `limited` or
+      // `undetermined` after a "Limit Access" / "Allow Full Access" prompt
+      // on the simulator, blocking the picker from ever opening. Just
+      // launch directly; on Android the launch call still surfaces a
+      // permission prompt when one is required.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         quality: 0.6,
       });
       if (!result.canceled && result.assets[0]) {
         setPhotoUri(result.assets[0].uri);
+      }
+    } catch (err) {
+      if (Platform.OS !== "web") {
+        Alert.alert(
+          "Couldn't open the photo picker",
+          err instanceof Error ? err.message : "Try again, or add the photo from Settings."
+        );
       }
     } finally {
       setPicking(false);
