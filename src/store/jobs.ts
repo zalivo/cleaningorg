@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { useShallow } from "zustand/react/shallow";
 import {
   type ChecklistItem,
   type Job,
@@ -157,51 +158,61 @@ export const useJobsStore = create<JobsState>()(
 // ---------------- Selector hooks (used by screens) ----------------
 
 export function useJobsForBooker(bookerId: string): Job[] {
-  return useJobsStore((s) =>
-    s.jobs.filter(
-      (j) =>
-        j.bookerId === bookerId &&
-        j.status !== "done" &&
-        j.status !== "cancelled"
+  return useJobsStore(
+    useShallow((s) =>
+      s.jobs.filter(
+        (j) =>
+          j.bookerId === bookerId &&
+          j.status !== "done" &&
+          j.status !== "cancelled"
+      )
     )
   );
 }
 
 export function useJobsForCleaner(cleanerId: string): Job[] {
-  return useJobsStore((s) =>
-    s.jobs.filter(
-      (j) =>
-        j.cleanerId === cleanerId &&
-        (j.status === "ready-to-clean" ||
-          j.status === "cleaning" ||
-          j.status === "ready-for-review")
+  return useJobsStore(
+    useShallow((s) =>
+      s.jobs.filter(
+        (j) =>
+          j.cleanerId === cleanerId &&
+          (j.status === "ready-to-clean" ||
+            j.status === "cleaning" ||
+            j.status === "ready-for-review")
+      )
     )
   );
 }
 
 export function useJobsForReviewer(reviewerId: string): Job[] {
-  return useJobsStore((s) =>
-    s.jobs.filter(
-      (j) =>
-        j.reviewerId === reviewerId &&
-        (j.status === "ready-for-review" || j.status === "reviewing")
+  return useJobsStore(
+    useShallow((s) =>
+      s.jobs.filter(
+        (j) =>
+          j.reviewerId === reviewerId &&
+          (j.status === "ready-for-review" || j.status === "reviewing")
+      )
     )
   );
 }
 
 export function useHistoryForCleaner(cleanerId: string): Job[] {
-  return useJobsStore((s) =>
-    s.jobs.filter(
-      (j) =>
-        j.cleanerId === cleanerId &&
-        (j.status === "done" || j.status === "cancelled")
+  return useJobsStore(
+    useShallow((s) =>
+      s.jobs.filter(
+        (j) =>
+          j.cleanerId === cleanerId &&
+          (j.status === "done" || j.status === "cancelled")
+      )
     )
   );
 }
 
 export function useHistoryForReviewer(reviewerId: string): Job[] {
-  return useJobsStore((s) =>
-    s.jobs.filter((j) => j.reviewerId === reviewerId && j.status === "done")
+  return useJobsStore(
+    useShallow((s) =>
+      s.jobs.filter((j) => j.reviewerId === reviewerId && j.status === "done")
+    )
   );
 }
 
