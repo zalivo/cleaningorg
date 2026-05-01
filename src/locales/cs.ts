@@ -126,6 +126,8 @@ export const cs: LocaleMessages = {
     totalLabel: "Celkem",
     cleanerPayLabel: "Uklízeč: {price}",
     reviewerFeeLabel: "Poplatek kontrolora: {price}",
+    yourPay: "Tvoje výplata: {price}",
+    yourFee: "Tvůj poplatek: {price}",
     actions: {
       cancel: "Zrušit objednávku",
       cancelConfirmTitle: "Zrušit objednávku?",
@@ -198,6 +200,8 @@ export const cs: LocaleMessages = {
       noJobs: "Zatím žádné dokončené úklidy",
       acrossOne: "Za 1 dokončený úklid",
       acrossMany: "Za {count} dokončených úklidů",
+      pendingOne: "{price} čeká na kontrolu · 1 úklid",
+      pendingMany: "{price} čeká na kontrolu · {count} úklidů",
     },
     reset: "Resetovat demo data",
     resetTitle: "Resetovat demo data?",

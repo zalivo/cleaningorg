@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { BRAND } from "@/constants/colors";
+import type { Role } from "@/data/identities";
 import {
   type Job,
   formatJobWindow,
@@ -10,18 +11,37 @@ import {
 } from "@/data/jobs";
 import { type MessageKey, useT } from "@/lib/i18n";
 import { STATUS_COLORS } from "@/lib/job-status-colors";
+import { useActiveIdentity } from "@/store/identity";
 
 interface Props {
   job: Job;
   onPress?: () => void;
 }
 
+/**
+ * Role-aware payout for the card. Booker sees the combined total they
+ * pay (cleaner pay + reviewer fee). Each worker only sees what they
+ * earn: the cleaner sees `priceCents - reviewerFeeCents`, the reviewer
+ * sees the flat reviewer fee.
+ */
+function payoutForRole(job: Job, role: Role): number {
+  if (role === "cleaner") {
+    return job.priceCents - (job.reviewerFeeCents ?? 0);
+  }
+  if (role === "reviewer") {
+    return job.reviewerFeeCents ?? 0;
+  }
+  return job.priceCents;
+}
+
 export function JobCard({ job, onPress }: Props) {
   const { colors } = useTheme();
+  const identity = useActiveIdentity();
   const t = useT();
   const status = STATUS_COLORS[job.status];
   const statusLabel = t(`status.${job.status}` as MessageKey);
   const late = isJobLate(job);
+  const displayedPrice = payoutForRole(job, identity.role);
 
   return (
     <Pressable
@@ -100,7 +120,7 @@ export function JobCard({ job, onPress }: Props) {
         )}
       <View style={styles.priceRow}>
         <Text style={[styles.price, { color: BRAND }]}>
-          {formatPrice(job.priceCents)}
+          {formatPrice(displayedPrice)}
         </Text>
       </View>
     </Pressable>

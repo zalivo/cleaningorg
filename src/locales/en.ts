@@ -127,6 +127,8 @@ export const en = {
     totalLabel: "Total",
     cleanerPayLabel: "Cleaner: {price}",
     reviewerFeeLabel: "Reviewer fee: {price}",
+    yourPay: "Your pay: {price}",
+    yourFee: "Your fee: {price}",
     actions: {
       cancel: "Cancel booking",
       cancelConfirmTitle: "Cancel booking?",
@@ -199,6 +201,8 @@ export const en = {
       noJobs: "No completed jobs yet",
       acrossOne: "Across 1 completed job",
       acrossMany: "Across {count} completed jobs",
+      pendingOne: "{price} pending review · 1 job",
+      pendingMany: "{price} pending review · {count} jobs",
     },
     reset: "Reset demo data",
     resetTitle: "Reset demo data?",

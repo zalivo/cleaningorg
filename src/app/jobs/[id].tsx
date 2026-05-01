@@ -210,17 +210,41 @@ export default function JobDetailRoute() {
           icon="shield-checkmark-outline"
           text={t("job.reviewerLabel", { name: job.reviewerName })}
         />
-        <Row
-          icon="cash-outline"
-          text={t("job.total", { price: formatPrice(job.priceCents) })}
-        />
-        {job.reviewerFeeCents !== undefined && job.reviewerFeeCents > 0 && (
+        {/* Booker pays the combined total — show that, plus the reviewer-
+            fee breakdown so they can see where their money goes. Each
+            worker only sees their own payout: cleaner gets priceCents
+            minus the reviewer fee, reviewer gets the flat reviewer fee. */}
+        {identity.role === "cleaner" ? (
           <Row
-            icon="document-text-outline"
-            text={t("job.reviewerFeeLabel", {
-              price: formatPrice(job.reviewerFeeCents),
+            icon="cash-outline"
+            text={t("job.yourPay", {
+              price: formatPrice(
+                job.priceCents - (job.reviewerFeeCents ?? 0),
+              ),
             })}
           />
+        ) : identity.role === "reviewer" ? (
+          <Row
+            icon="cash-outline"
+            text={t("job.yourFee", {
+              price: formatPrice(job.reviewerFeeCents ?? 0),
+            })}
+          />
+        ) : (
+          <>
+            <Row
+              icon="cash-outline"
+              text={t("job.total", { price: formatPrice(job.priceCents) })}
+            />
+            {job.reviewerFeeCents !== undefined && job.reviewerFeeCents > 0 && (
+              <Row
+                icon="document-text-outline"
+                text={t("job.reviewerFeeLabel", {
+                  price: formatPrice(job.reviewerFeeCents),
+                })}
+              />
+            )}
+          </>
         )}
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
       </View>

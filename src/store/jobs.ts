@@ -5,6 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import {
   type ChecklistItem,
   type Job,
+  type JobStatus,
   type Note,
   seedJobs,
 } from "@/data/jobs";
@@ -410,6 +411,46 @@ export function useReviewerEarnings(reviewerId: string): RoleTotals {
     useShallow((s) => {
       const jobs = s.jobs.filter(
         (j) => j.reviewerId === reviewerId && j.status === "done"
+      );
+      let totalCents = 0;
+      for (const j of jobs) totalCents += j.reviewerFeeCents ?? 0;
+      return { totalCents, jobCount: jobs.length };
+    })
+  );
+}
+
+const PENDING_STATUSES = new Set<JobStatus>([
+  "ready-for-review",
+  "reviewing",
+]);
+
+/**
+ * Cleaner pay tied up in jobs the cleaner has submitted but the reviewer
+ * hasn't approved (or declined) yet. Used on the Profile screen to give a
+ * clear "you've done X, Y is awaiting review" picture so the History
+ * count and the Earnings count line up.
+ */
+export function useCleanerPending(cleanerId: string): RoleTotals {
+  return useJobsStore(
+    useShallow((s) => {
+      const jobs = s.jobs.filter(
+        (j) =>
+          j.cleanerId === cleanerId && PENDING_STATUSES.has(j.status)
+      );
+      let totalCents = 0;
+      for (const j of jobs) totalCents += cleanerPayOf(j);
+      return { totalCents, jobCount: jobs.length };
+    })
+  );
+}
+
+/** Reviewer fees tied up in jobs the reviewer hasn't approved yet. */
+export function useReviewerPending(reviewerId: string): RoleTotals {
+  return useJobsStore(
+    useShallow((s) => {
+      const jobs = s.jobs.filter(
+        (j) =>
+          j.reviewerId === reviewerId && PENDING_STATUSES.has(j.status)
       );
       let totalCents = 0;
       for (const j of jobs) totalCents += j.reviewerFeeCents ?? 0;

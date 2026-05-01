@@ -16,7 +16,9 @@ import { useActiveIdentity } from "@/store/identity";
 import {
   useBookerSpend,
   useCleanerEarnings,
+  useCleanerPending,
   useReviewerEarnings,
+  useReviewerPending,
 } from "@/store/jobs";
 
 export default function ProfileRoute() {
@@ -38,7 +40,9 @@ export default function ProfileRoute() {
   // { totalCents: 0, jobCount: 0 } — the React work is small and the
   // alternative (conditional hooks) would be a rules-of-hooks violation.
   const cleanerEarnings = useCleanerEarnings(identity.id);
+  const cleanerPending = useCleanerPending(identity.id);
   const reviewerEarnings = useReviewerEarnings(identity.id);
+  const reviewerPending = useReviewerPending(identity.id);
   const bookerSpend = useBookerSpend(identity.id);
   const totals =
     identity.role === "cleaner"
@@ -49,6 +53,15 @@ export default function ProfileRoute() {
           ? { label: t("profile.totals.spend"), ...bookerSpend }
           : null;
 
+  // Pending only applies to the two paid roles. Booker has no "pending
+  // spend" — they're billed when they book, not when the work clears.
+  const pending =
+    identity.role === "cleaner"
+      ? cleanerPending
+      : identity.role === "reviewer"
+        ? reviewerPending
+        : null;
+
   const totalsSub =
     !totals
       ? ""
@@ -57,6 +70,18 @@ export default function ProfileRoute() {
         : totals.jobCount === 1
           ? t("profile.totals.acrossOne")
           : t("profile.totals.acrossMany", { count: totals.jobCount });
+
+  const pendingSub =
+    pending && pending.jobCount > 0
+      ? pending.jobCount === 1
+        ? t("profile.totals.pendingOne", {
+            price: formatPrice(pending.totalCents),
+          })
+        : t("profile.totals.pendingMany", {
+            price: formatPrice(pending.totalCents),
+            count: pending.jobCount,
+          })
+      : null;
 
   return (
     <SafeAreaView
@@ -95,6 +120,11 @@ export default function ProfileRoute() {
             <Text style={[styles.totalsSub, { color: colors.text }]}>
               {totalsSub}
             </Text>
+            {pendingSub && (
+              <Text style={[styles.totalsPending, { color: colors.text }]}>
+                {pendingSub}
+              </Text>
+            )}
           </View>
         )}
 
@@ -181,6 +211,7 @@ const styles = StyleSheet.create({
   },
   totalsValue: { fontSize: 30, fontWeight: "700" },
   totalsSub: { fontSize: 13, opacity: 0.7 },
+  totalsPending: { fontSize: 13, opacity: 0.7, fontWeight: "600", marginTop: 2 },
   version: { fontSize: 12, opacity: 0.5, textAlign: "center", marginTop: 8 },
   localeRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   localeChip: {
