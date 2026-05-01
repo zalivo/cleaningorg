@@ -49,3 +49,6 @@ dogfood-output/
 
 # EAS
 .eas/
+
+# Claude Code per-user overrides — settings.json stays tracked
+.claude/settings.local.json
