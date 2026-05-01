@@ -77,7 +77,7 @@ export const seedJobs: Job[] = [
     scheduledStart: "2026-05-04T10:00:00.000Z",
     scheduledEnd: "2026-05-04T12:00:00.000Z",
     priceCents: 70000, // Maria Santos 350 Kč/hr × 2h
-    notes: "Vchodový kód 4815. V zahradě je hodný pes (Rex).",
+    notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-to-clean",
     declineCount: 0,
     createdAt: "2026-05-01T08:00:00.000Z",
@@ -99,7 +99,7 @@ export const seedJobs: Job[] = [
     actualStart: "2026-05-02T09:15:00.000Z",
     actualEnd: "2026-05-02T13:30:00.000Z",
     priceCents: 140000, // Maria Santos 350 Kč/hr × 4h
-    notes: "Vchodový kód 4815. V zahradě je hodný pes (Rex).",
+    notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-for-review",
     checklist: [
       { room: "Kitchen", done: true },
@@ -134,7 +134,7 @@ export const seedJobs: Job[] = [
     actualStart: "2026-04-15T18:00:00.000Z",
     actualEnd: "2026-04-15T20:45:00.000Z",
     priceCents: 120000, // Aisha Patel 400 Kč/hr × 3h
-    notes: "Recepce pustí uklízeče dovnitř. Pouze po pracovní době.",
+    notes: "Reception will let the cleaner in. After-hours only.",
     status: "done",
     declineCount: 0,
     reviewerNotes: [

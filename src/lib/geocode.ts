@@ -18,9 +18,12 @@ export interface GeocodeResult {
 const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
 const USER_AGENT = "CleaningOrg/1.0 (hackathon demo)";
 
+/** Default request timeout; trips the abort signal and resolves to null. */
+const DEFAULT_TIMEOUT_MS = 10_000;
+
 export async function geocodeAddress(
   address: string,
-  options: { signal?: AbortSignal } = {}
+  options: { timeoutMs?: number } = {}
 ): Promise<GeocodeResult | null> {
   const query = address.trim();
   if (!query) return null;
@@ -28,6 +31,15 @@ export async function geocodeAddress(
   const url = `${NOMINATIM_ENDPOINT}?q=${encodeURIComponent(
     query
   )}&format=json&limit=1&addressdetails=0`;
+
+  // Bound the round-trip so a stalled Nominatim can't lock the booking
+  // form's "Looking up address…" state forever. On timeout we fall through
+  // to the catch and return null; the caller saves without coords.
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(),
+    options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+  );
 
   try {
     const response = await fetch(url, {
@@ -37,7 +49,7 @@ export async function geocodeAddress(
         // runtime honours it. Either way Nominatim sees a valid UA.
         "User-Agent": USER_AGENT,
       },
-      signal: options.signal,
+      signal: controller.signal,
     });
     if (!response.ok) return null;
     const json = (await response.json()) as Array<{
@@ -59,6 +71,8 @@ export async function geocodeAddress(
     };
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
