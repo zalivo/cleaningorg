@@ -192,6 +192,7 @@ export const sk: LocaleMessages = {
       list: "Zoznam",
       week: "Týždeň",
     },
+    completed: "Dokončené",
   },
   history: {
     title: "História",

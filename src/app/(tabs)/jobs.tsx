@@ -10,6 +10,7 @@ import type { Job } from "@/data/jobs";
 import { useT } from "@/lib/i18n";
 import { useActiveIdentity } from "@/store/identity";
 import {
+  useHistoryForBooker,
   useJobsForBooker,
   useJobsForCleaner,
   useJobsForReviewer,
@@ -24,6 +25,7 @@ export default function JobsRoute() {
   const t = useT();
 
   const bookerJobs = useJobsForBooker(identity.id);
+  const bookerHistory = useHistoryForBooker(identity.id);
   const cleanerJobs = useJobsForCleaner(identity.id);
   const reviewerJobs = useJobsForReviewer(identity.id);
 
@@ -37,6 +39,10 @@ export default function JobsRoute() {
       : identity.role === "cleaner"
         ? cleanerJobs
         : reviewerJobs;
+
+  // Bookers don't have a History tab; their completed jobs go inline.
+  const completed: Job[] =
+    identity.role === "booker" ? bookerHistory : [];
 
   const title =
     identity.role === "booker"
@@ -54,6 +60,14 @@ export default function JobsRoute() {
 
   const showWeekToggle = identity.role === "cleaner";
   const showWeek = showWeekToggle && viewMode === "week";
+
+  const renderJob = (j: Job) => (
+    <JobCard
+      key={j.id}
+      job={j}
+      onPress={() => router.push(`/jobs/${j.id}`)}
+    />
+  );
 
   return (
     <SafeAreaView
@@ -91,18 +105,22 @@ export default function JobsRoute() {
             jobs={jobs}
             onPressJob={(id) => router.push(`/jobs/${id}`)}
           />
-        ) : jobs.length === 0 ? (
+        ) : jobs.length === 0 && completed.length === 0 ? (
           <Text style={[styles.empty, { color: colors.text }]}>
             {emptyCopy}
           </Text>
         ) : (
-          jobs.map((j) => (
-            <JobCard
-              key={j.id}
-              job={j}
-              onPress={() => router.push(`/jobs/${j.id}`)}
-            />
-          ))
+          <>
+            {jobs.map(renderJob)}
+            {completed.length > 0 && (
+              <>
+                <Text style={[styles.sectionHeader, { color: colors.text }]}>
+                  {t("jobs.completed")}
+                </Text>
+                {completed.map(renderJob)}
+              </>
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -167,4 +185,12 @@ const styles = StyleSheet.create({
   },
   toggleBtnText: { fontSize: 13, fontWeight: "600" },
   empty: { fontSize: 14, opacity: 0.6, paddingVertical: 8 },
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    opacity: 0.6,
+    marginTop: 8,
+  },
 });

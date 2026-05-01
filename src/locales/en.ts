@@ -193,6 +193,7 @@ export const en = {
       list: "List",
       week: "Week",
     },
+    completed: "Completed",
   },
   history: {
     title: "History",

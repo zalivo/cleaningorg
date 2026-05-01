@@ -342,6 +342,20 @@ export function useJobsForReviewer(reviewerId: string): Job[] {
   );
 }
 
+/**
+ * Past bookings for a booker. Bookers don't have a History tab —
+ * surfaced inline in `(tabs)/jobs.tsx`.
+ */
+export function useHistoryForBooker(bookerId: string): Job[] {
+  return useJobsStore(
+    useShallow((s) =>
+      s.jobs
+        .filter((j) => j.bookerId === bookerId && j.status === "done")
+        .sort(byScheduleDesc)
+    )
+  );
+}
+
 export function useHistoryForCleaner(cleanerId: string): Job[] {
   // Cleaner's History holds everything past the "I am still working on this"
   // states. Submitted jobs (`ready-for-review`, `reviewing`) belong here —
