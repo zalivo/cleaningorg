@@ -40,6 +40,16 @@ export interface Job {
   /** Stamped automatically on the `ready-for-review` transition. */
   actualEnd?: string; // ISO
 
+  /**
+   * Total price for the job in integer minor currency units (haléře —
+   * 1/100 of a koruna). Single currency v1: CZK. Snapshotted at booking
+   * time as the cleaner's `hourlyRate` × the scheduled duration in hours.
+   * Stays put if rate or window later change; this is a transactional
+   * record, not a recomputation. The field name keeps `Cents` for
+   * historical reasons; read it as "minor units".
+   */
+  priceCents: number;
+
   notes?: string;
   status: JobStatus;
   checklist?: ChecklistItem[];
@@ -66,6 +76,7 @@ export const seedJobs: Job[] = [
     reviewerName: "Priya Sharma",
     scheduledStart: "2026-05-04T10:00:00.000Z",
     scheduledEnd: "2026-05-04T12:00:00.000Z",
+    priceCents: 70000, // Maria Santos 350 Kč/hr × 2h
     notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-to-clean",
     declineCount: 0,
@@ -87,6 +98,7 @@ export const seedJobs: Job[] = [
     scheduledEnd: "2026-05-02T13:00:00.000Z",
     actualStart: "2026-05-02T09:15:00.000Z",
     actualEnd: "2026-05-02T13:30:00.000Z",
+    priceCents: 140000, // Maria Santos 350 Kč/hr × 4h
     notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-for-review",
     checklist: [
@@ -121,6 +133,7 @@ export const seedJobs: Job[] = [
     scheduledEnd: "2026-04-15T21:00:00.000Z",
     actualStart: "2026-04-15T18:00:00.000Z",
     actualEnd: "2026-04-15T20:45:00.000Z",
+    priceCents: 120000, // Aisha Patel 400 Kč/hr × 3h
     notes: "Reception will let the cleaner in. After-hours only.",
     status: "done",
     declineCount: 0,
@@ -134,6 +147,68 @@ export const seedJobs: Job[] = [
     createdAt: "2026-04-14T08:00:00.000Z",
   },
 ];
+
+// ---------------- Pricing helpers ----------------
+
+const MS_PER_HOUR = 60 * 60 * 1000;
+
+/** Czech non-breaking space — sits between the amount and the `Kč` suffix. */
+const NBSP = "\u00A0";
+
+/**
+ * Hours between two ISO timestamps, returned as a real number (e.g. 2.5).
+ * Order is `end - start`; callers pass the scheduled window in that order.
+ */
+export function estimatedHours(startISO: string, endISO: string): number {
+  return (
+    (new Date(endISO).getTime() - new Date(startISO).getTime()) / MS_PER_HOUR
+  );
+}
+
+/**
+ * Snapshot price in minor currency units (haléře, 1/100 of a koruna) from
+ * an hourly rate in whole korunas and a scheduled window. Round once at
+ * this boundary so we never persist a fractional minor unit.
+ *
+ * The field is named `priceCents` for historical reasons — read it as
+ * "minor units" regardless of currency.
+ */
+export function computePriceCents(
+  hourlyRate: number,
+  startISO: string,
+  endISO: string
+): number {
+  return Math.round(hourlyRate * estimatedHours(startISO, endISO) * 100);
+}
+
+/**
+ * Format integer minor units (haléře) as a CZK string:
+ *   70000   -> "700 Kč"
+ *   140000  -> "1 400 Kč"
+ *   7050    -> "70,50 Kč"
+ * Whole-koruna amounts drop the haléře part so the common path reads
+ * cleanly. Single currency v1 — Czech locale and `Kč` suffix are
+ * hard-coded; localisation is out of scope.
+ */
+export function formatPrice(cents: number): string {
+  const koruna = cents / 100;
+  if (Number.isInteger(koruna)) {
+    return `${koruna.toLocaleString("cs-CZ")}${NBSP}Kč`;
+  }
+  return `${koruna.toLocaleString("cs-CZ", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}${NBSP}Kč`;
+}
+
+/**
+ * Format an hourly rate in whole korunas as e.g. "350 Kč/hr". The English
+ * `/hr` suffix is intentional — the rest of the UI is in English; only
+ * the currency unit is localised in v1.
+ */
+export function formatRatePerHour(ratePerHour: number): string {
+  return `${ratePerHour.toLocaleString("cs-CZ")}${NBSP}Kč/hr`;
+}
 
 // ---------------- Format helpers ----------------
 

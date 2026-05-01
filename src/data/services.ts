@@ -16,6 +16,8 @@ export interface Service {
   id: ServiceId;
   name: string;
   description: string;
+  /** Reference flat price in whole korunas (CZK). Display only — actual job
+   *  totals come from the cleaner's hourly rate × scheduled duration. */
   price: number;
   durationHours: number;
   icon: ServiceIcon;
@@ -26,7 +28,7 @@ export const services: Service[] = [
     id: "standard",
     name: "Standard Clean",
     description: "Kitchen, bathrooms, bedrooms, common areas",
-    price: 80,
+    price: 800,
     durationHours: 2,
     icon: "home-outline",
   },
@@ -34,7 +36,7 @@ export const services: Service[] = [
     id: "deep",
     name: "Deep Clean",
     description: "Everything plus inside appliances, windows, baseboards",
-    price: 150,
+    price: 1500,
     durationHours: 4,
     icon: "sparkles-outline",
   },
@@ -42,7 +44,7 @@ export const services: Service[] = [
     id: "move-out",
     name: "Move-out Clean",
     description: "Empty home, ready-to-handover quality",
-    price: 200,
+    price: 2000,
     durationHours: 5,
     icon: "cube-outline",
   },
@@ -50,7 +52,7 @@ export const services: Service[] = [
     id: "office",
     name: "Office Clean",
     description: "Desks, breakrooms, shared spaces",
-    price: 120,
+    price: 1200,
     durationHours: 3,
     icon: "business-outline",
   },
@@ -58,7 +60,7 @@ export const services: Service[] = [
     id: "post-construction",
     name: "Post-construction",
     description: "Dust, debris, and fine particles after renovation",
-    price: 250,
+    price: 2500,
     durationHours: 6,
     icon: "hammer-outline",
   },

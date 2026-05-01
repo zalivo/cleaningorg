@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 import { Pressable, View, Text, StyleSheet } from "react-native";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
+import { formatPrice } from "@/data/jobs";
 import type { Service } from "@/data/services";
 
 interface Props {
@@ -34,7 +35,9 @@ export function ServiceCard({ service, onPress, selected }: Props) {
           {service.description}
         </Text>
         <View style={styles.meta}>
-          <Text style={[styles.price, { color: BRAND }]}>${service.price}</Text>
+          <Text style={[styles.price, { color: BRAND }]}>
+            {formatPrice(service.price * 100)}
+          </Text>
           <Text style={[styles.duration, { color: colors.text }]}>
             · {service.durationHours}h
           </Text>

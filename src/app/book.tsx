@@ -14,7 +14,13 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
-import { formatJobWindow } from "@/data/jobs";
+import {
+  computePriceCents,
+  estimatedHours,
+  formatJobWindow,
+  formatPrice,
+  formatRatePerHour,
+} from "@/data/jobs";
 import { getProfessional, professionals } from "@/data/professionals";
 import { getReviewer, reviewers } from "@/data/reviewers";
 import { useActiveIdentity } from "@/store/identity";
@@ -69,6 +75,11 @@ function resolveWindow(
   return { startISO: start.toISOString(), endISO: end.toISOString() };
 }
 
+function formatHours(h: number): string {
+  if (Number.isInteger(h)) return `${h} hr`;
+  return `${h.toFixed(1)} hr`;
+}
+
 function notify(title: string, message: string) {
   if (Platform.OS === "web") {
     window.alert(`${title}\n\n${message}`);
@@ -102,6 +113,15 @@ export default function BookRoute() {
   const [notes, setNotes] = useState<string>(property?.notes ?? "");
 
   const scheduledWindow = resolveWindow(dateId, timeId, durationId);
+  const cleaner = getProfessional(cleanerId);
+  const priceCents = cleaner
+    ? computePriceCents(
+        cleaner.hourlyRate,
+        scheduledWindow.startISO,
+        scheduledWindow.endISO,
+      )
+    : 0;
+  const hours = estimatedHours(scheduledWindow.startISO, scheduledWindow.endISO);
 
   function pickProperty(id: string) {
     setPropertyId(id);
@@ -154,6 +174,11 @@ export default function BookRoute() {
       reviewerName: reviewer.name,
       scheduledStart: scheduledWindow.startISO,
       scheduledEnd: scheduledWindow.endISO,
+      priceCents: computePriceCents(
+        cleaner.hourlyRate,
+        scheduledWindow.startISO,
+        scheduledWindow.endISO,
+      ),
       notes: notes.trim() || undefined,
     });
 
@@ -339,6 +364,16 @@ export default function BookRoute() {
             <Text style={[styles.summaryWindow, { color: BRAND }]}>
               {formatJobWindow(scheduledWindow.startISO, scheduledWindow.endISO)}
             </Text>
+            {cleaner && (
+              <View style={styles.summaryPriceRow}>
+                <Text style={[styles.summaryBreakdown, { color: colors.text }]}>
+                  {formatRatePerHour(cleaner.hourlyRate)} · {formatHours(hours)}
+                </Text>
+                <Text style={[styles.summaryPriceTotal, { color: BRAND }]}>
+                  {formatPrice(priceCents)}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -479,6 +514,14 @@ const styles = StyleSheet.create({
   summaryTitle: { fontSize: 16, fontWeight: "700" },
   summaryAddress: { fontSize: 14, opacity: 0.75 },
   summaryWindow: { fontSize: 13, fontWeight: "600", marginTop: 4 },
+  summaryPriceRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  summaryBreakdown: { fontSize: 13, opacity: 0.75 },
+  summaryPriceTotal: { fontSize: 22, fontWeight: "700" },
   confirm: {
     paddingVertical: 16,
     borderRadius: 14,
