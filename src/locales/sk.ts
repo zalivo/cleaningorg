@@ -74,6 +74,7 @@ export const sk: LocaleMessages = {
     property: "Nehnuteľnosť",
     date: "Dátum",
     time: "Čas",
+    when: "Kedy",
     duration: "Trvanie",
     cleaner: "Upratovač",
     reviewer: "Kontrolór",
@@ -121,6 +122,8 @@ export const sk: LocaleMessages = {
       notBookerBody: "Nové objednávky môže vytvárať iba admin. Prepni sa v profile.",
       bookingFailedTitle: "Objednávka zlyhala",
       bookingFailedBody: "Vybraný upratovač alebo kontrolór už neexistuje.",
+      pastTimeTitle: "Minulý čas",
+      pastTimeBody: "Plánovaný začiatok je v minulosti. Vyberte čas v budúcnosti.",
     },
   },
   job: {
@@ -178,6 +181,10 @@ export const sk: LocaleMessages = {
       booker: "Zatiaľ žiadne objednávky. Klepni na Domov → Objednať upratanie.",
       cleaner: "Nemáš pridelené žiadne upratovania.",
       reviewer: "Zatiaľ nič na kontrolu.",
+    },
+    modes: {
+      list: "Zoznam",
+      week: "Týždeň",
     },
   },
   history: {

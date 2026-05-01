@@ -13,6 +13,9 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
+import DateTimePicker, {
+  DateTimePickerAndroid,
+} from "@react-native-community/datetimepicker";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import {
   computePriceCents,
@@ -33,19 +36,6 @@ import { useJobsStore } from "@/store/jobs";
 import { usePropertiesForOwner, useProperty } from "@/store/properties";
 import { useCleanerAggregateRating } from "@/store/ratings";
 
-const DATE_OPTIONS = [
-  { id: "tomorrow", label: "Tomorrow", offsetDays: 1 },
-  { id: "in-2-days", label: "In 2 days", offsetDays: 2 },
-  { id: "weekend", label: "This weekend", offsetDays: 5 },
-  { id: "next-week", label: "Next week", offsetDays: 7 },
-];
-
-const TIME_OPTIONS = [
-  { id: "morning", label: "Morning", hint: "8am – 12pm", hour: 9 },
-  { id: "afternoon", label: "Afternoon", hint: "12pm – 5pm", hour: 14 },
-  { id: "evening", label: "Evening", hint: "5pm – 9pm", hour: 18 },
-];
-
 const DURATION_OPTIONS = [
   { id: "1h", label: "1 hour", hours: 1 },
   { id: "2h", label: "2 hours", hours: 2 },
@@ -54,7 +44,9 @@ const DURATION_OPTIONS = [
   { id: "6h", label: "6 hours", hours: 6 },
 ];
 
-const DEFAULT_DURATION_ID = "2h";
+const DEFAULT_DURATION_ID = "1h";
+const TIME_STEP_MINUTES = 15;
+const TIME_STEP_SECONDS = TIME_STEP_MINUTES * 60;
 
 const STEPS = [1, 2, 3] as const;
 type Step = (typeof STEPS)[number];
@@ -71,24 +63,34 @@ interface ScheduledWindow {
   endISO: string;
 }
 
-function resolveWindow(
-  dateId: string,
-  timeId: string,
-  durationId: string
-): ScheduledWindow {
-  const dOpt = DATE_OPTIONS.find((d) => d.id === dateId) ?? DATE_OPTIONS[0];
-  const tOpt = TIME_OPTIONS.find((t) => t.id === timeId) ?? TIME_OPTIONS[0];
-  const dur =
+function defaultStart(): Date {
+  // Tomorrow at 09:00 — preserves the previous default of "Tomorrow / Morning".
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(9, 0, 0, 0);
+  return d;
+}
+
+function durationHours(durationId: string): number {
+  return (
     DURATION_OPTIONS.find((d) => d.id === durationId) ??
     DURATION_OPTIONS.find((d) => d.id === DEFAULT_DURATION_ID) ??
-    DURATION_OPTIONS[0];
+    DURATION_OPTIONS[0]
+  ).hours;
+}
 
-  const start = new Date();
-  start.setDate(start.getDate() + dOpt.offsetDays);
-  start.setHours(tOpt.hour, 0, 0, 0);
+function resolveWindow(start: Date, durationId: string): ScheduledWindow {
   const end = new Date(start);
-  end.setHours(end.getHours() + dur.hours);
+  end.setHours(end.getHours() + durationHours(durationId));
   return { startISO: start.toISOString(), endISO: end.toISOString() };
+}
+
+/** Format a Date as "YYYY-MM-DDTHH:MM" in local time for `<input type="datetime-local">`. */
+function toDatetimeLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+    d.getDate()
+  )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function formatHours(h: number): string {
@@ -120,8 +122,8 @@ export default function BookRoute() {
   const [propertyId, setPropertyId] = useState<string>(initialPropertyId);
   const property = useProperty(propertyId);
 
-  const [dateId, setDateId] = useState<string>(DATE_OPTIONS[0].id);
-  const [timeId, setTimeId] = useState<string>(TIME_OPTIONS[0].id);
+  const [scheduledStart, setScheduledStart] = useState<Date>(defaultStart);
+  const [iosPicker, setIosPicker] = useState<"date" | "time" | null>(null);
   const [durationId, setDurationId] = useState<string>(DEFAULT_DURATION_ID);
   const [cleanerId, setCleanerId] = useState<string>(
     preselectedPro?.id ?? professionals[0].id
@@ -130,7 +132,11 @@ export default function BookRoute() {
   const [notes, setNotes] = useState<string>(property?.notes ?? "");
   const [step, setStep] = useState<Step>(1);
 
-  const scheduledWindow = resolveWindow(dateId, timeId, durationId);
+  // `now` used for both the picker's minimumDate and the runtime past-time
+  // guard at submit. Recomputed every render so a long-open form catches
+  // drift past the hour.
+  const now = new Date();
+  const scheduledWindow = resolveWindow(scheduledStart, durationId);
   const cleaner = getProfessional(cleanerId);
   const reviewer = getReviewer(reviewerId);
   const cleanerPayCents = cleaner
@@ -143,6 +149,54 @@ export default function BookRoute() {
   const reviewerFeeCents = reviewer?.feeCents ?? 0;
   const priceCents = cleanerPayCents + reviewerFeeCents;
   const hours = estimatedHours(scheduledWindow.startISO, scheduledWindow.endISO);
+
+  /**
+   * Apply a picker's resulting Date to `scheduledStart`. `mode === "date"`
+   * keeps the existing time-of-day; `mode === "time"` keeps the existing
+   * date. Picking a full datetime (web) replaces both at once.
+   */
+  function applyPicked(mode: "date" | "time" | "datetime", picked: Date) {
+    setScheduledStart((prev) => {
+      const next = new Date(prev);
+      if (mode === "date") {
+        next.setFullYear(
+          picked.getFullYear(),
+          picked.getMonth(),
+          picked.getDate()
+        );
+      } else if (mode === "time") {
+        next.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
+      } else {
+        next.setFullYear(
+          picked.getFullYear(),
+          picked.getMonth(),
+          picked.getDate()
+        );
+        next.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
+      }
+      return next;
+    });
+  }
+
+  function openPicker(mode: "date" | "time") {
+    if (Platform.OS === "android") {
+      DateTimePickerAndroid.open({
+        value: scheduledStart,
+        mode,
+        is24Hour: true,
+        minimumDate: mode === "date" ? now : undefined,
+        minuteInterval: mode === "time" ? TIME_STEP_MINUTES : undefined,
+        onChange: (_event, picked) => {
+          if (picked) applyPicked(mode, picked);
+        },
+      });
+    } else if (Platform.OS === "ios") {
+      // Toggle the inline picker. Picking writes through onChange; the
+      // field's display always reflects the current scheduledStart.
+      setIosPicker((cur) => (cur === mode ? null : mode));
+    }
+    // Web is handled by the <input type="datetime-local"> element directly.
+  }
 
   function pickProperty(id: string) {
     setPropertyId(id);
@@ -165,6 +219,14 @@ export default function BookRoute() {
     }
     if (!property) {
       notify(t("book.alerts.propertyRequired"), t("book.alerts.propertyBody"));
+      setStep(1);
+      return;
+    }
+    if (scheduledStart.getTime() < Date.now()) {
+      // Native time pickers can't enforce "now or later" the way
+      // `minimumDate` enforces "today or later" — a user can pick today's
+      // morning when it's already past noon. Catch it here.
+      notify(t("book.alerts.pastTimeTitle"), t("book.alerts.pastTimeBody"));
       setStep(1);
       return;
     }
@@ -299,32 +361,88 @@ export default function BookRoute() {
               </View>
             </Field>
 
-            <Field label={t("book.date")}>
-              <View style={styles.chipsWrap}>
-                {DATE_OPTIONS.map((d) => (
-                  <Chip
-                    key={d.id}
-                    label={t(`book.dates.${d.id}` as MessageKey)}
-                    selected={d.id === dateId}
-                    onPress={() => setDateId(d.id)}
+            {Platform.OS === "web" ? (
+              <Field label={t("book.when")}>
+                {/* react-native-web renders View/Pressable as DOM, so a
+                    native `datetime-local` input slots in cleanly. The
+                    browser owns the popup UI; we just write to
+                    scheduledStart on change. */}
+                <input
+                  type="datetime-local"
+                  value={toDatetimeLocal(scheduledStart)}
+                  min={toDatetimeLocal(now)}
+                  step={TIME_STEP_SECONDS}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (!v) return;
+                    const parsed = new Date(v);
+                    if (!Number.isNaN(parsed.getTime())) {
+                      applyPicked("datetime", parsed);
+                    }
+                  }}
+                  style={{
+                    border: `${StyleSheet.hairlineWidth}px solid ${colors.border}`,
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                    fontSize: 15,
+                    fontFamily: "inherit",
+                    backgroundColor: colors.card,
+                    color: colors.text,
+                    colorScheme: "light dark",
+                  }}
+                />
+              </Field>
+            ) : (
+              <>
+                <Field label={t("book.date")}>
+                  <PickerTrigger
+                    value={scheduledStart.toLocaleDateString(undefined, {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                    icon="calendar-outline"
+                    expanded={iosPicker === "date"}
+                    onPress={() => openPicker("date")}
                   />
-                ))}
-              </View>
-            </Field>
+                  {iosPicker === "date" && Platform.OS === "ios" && (
+                    <DateTimePicker
+                      value={scheduledStart}
+                      mode="date"
+                      display="inline"
+                      minimumDate={now}
+                      onChange={(_event, picked) => {
+                        if (picked) applyPicked("date", picked);
+                      }}
+                    />
+                  )}
+                </Field>
 
-            <Field label={t("book.time")}>
-              <View style={styles.chipsWrap}>
-                {TIME_OPTIONS.map((opt) => (
-                  <Chip
-                    key={opt.id}
-                    label={t(`book.times.${opt.id}` as MessageKey)}
-                    hint={t(`book.times.${opt.id}-hint` as MessageKey)}
-                    selected={opt.id === timeId}
-                    onPress={() => setTimeId(opt.id)}
+                <Field label={t("book.time")}>
+                  <PickerTrigger
+                    value={scheduledStart.toLocaleTimeString(undefined, {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                    icon="time-outline"
+                    expanded={iosPicker === "time"}
+                    onPress={() => openPicker("time")}
                   />
-                ))}
-              </View>
-            </Field>
+                  {iosPicker === "time" && Platform.OS === "ios" && (
+                    <DateTimePicker
+                      value={scheduledStart}
+                      mode="time"
+                      display="spinner"
+                      minuteInterval={TIME_STEP_MINUTES}
+                      onChange={(_event, picked) => {
+                        if (picked) applyPicked("time", picked);
+                      }}
+                    />
+                  )}
+                </Field>
+              </>
+            )}
 
             <Field label={t("book.duration")}>
               <View style={styles.chipsWrap}>
@@ -571,6 +689,44 @@ function Field({
   );
 }
 
+function PickerTrigger({
+  value,
+  icon,
+  expanded,
+  onPress,
+}: {
+  value: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  expanded: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.pickerTrigger,
+        {
+          backgroundColor: colors.card,
+          borderColor: expanded ? BRAND : colors.border,
+          opacity: pressed ? 0.85 : 1,
+        },
+      ]}
+    >
+      <Ionicons name={icon} size={18} color={BRAND} />
+      <Text style={[styles.pickerTriggerText, { color: colors.text }]}>
+        {value}
+      </Text>
+      <Ionicons
+        name={expanded ? "chevron-up" : "chevron-down"}
+        size={16}
+        color={colors.text}
+      />
+    </Pressable>
+  );
+}
+
 function CleanerChip({
   pro,
   selected,
@@ -684,6 +840,16 @@ const styles = StyleSheet.create({
   },
   chipLabel: { fontSize: 14, fontWeight: "600" },
   chipHint: { fontSize: 11, marginTop: 2, opacity: 0.85 },
+  pickerTrigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  pickerTriggerText: { flex: 1, fontSize: 15, fontWeight: "600" },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 12,

@@ -74,6 +74,7 @@ export const cs: LocaleMessages = {
     property: "Nemovitost",
     date: "Datum",
     time: "Čas",
+    when: "Kdy",
     duration: "Doba trvání",
     cleaner: "Uklízeč",
     reviewer: "Kontrolor",
@@ -121,6 +122,8 @@ export const cs: LocaleMessages = {
       notBookerBody: "Nové objednávky může vytvářet pouze admin. Přepni se v profilu.",
       bookingFailedTitle: "Objednávka selhala",
       bookingFailedBody: "Zvolený uklízeč nebo kontrolor už neexistuje.",
+      pastTimeTitle: "Minulý čas",
+      pastTimeBody: "Plánovaný začátek je v minulosti. Vyberte čas v budoucnosti.",
     },
   },
   job: {
@@ -178,6 +181,10 @@ export const cs: LocaleMessages = {
       booker: "Zatím žádné objednávky. Klepni na Domů → Objednat úklid.",
       cleaner: "Nemáš přiřazené žádné úklidy.",
       reviewer: "Zatím není co kontrolovat.",
+    },
+    modes: {
+      list: "Seznam",
+      week: "Týden",
     },
   },
   history: {
