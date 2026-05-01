@@ -60,7 +60,10 @@ export default function JobDetailRoute() {
     identity.role === "booker" && identity.id === job.bookerId;
 
   function confirmCancel() {
-    const ok = () => cancel(jobId);
+    const ok = () => {
+      cancel(jobId);
+      router.back();
+    };
     if (Platform.OS === "web") {
       if (window.confirm("Cancel this booking?")) ok();
     } else {
@@ -142,7 +145,10 @@ export default function JobDetailRoute() {
       )}
       {isAssignedCleaner && job.status === "cleaning" && (
         <Pressable
-          onPress={() => finishCleaning(jobId)}
+          onPress={() => {
+            finishCleaning(jobId);
+            router.back();
+          }}
           style={({ pressed }) => [
             styles.btnPrimary,
             { opacity: pressed ? 0.85 : 1 },

@@ -40,6 +40,9 @@
         "projectId": "706ca359-624c-449d-a78c-0846921d2566"
       }
     },
-    "owner": "cleaning-org"
+    "owner": "cleaning-org",
+    "ios": {
+      "bundleIdentifier": "com.glenn032.cleaning-org"
+    }
   }
 }
