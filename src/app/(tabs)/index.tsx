@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
+import { geocodeAddress } from "@/lib/geocode";
 import { useActiveIdentity } from "@/store/identity";
 import { usePropertiesForOwner, usePropertiesStore } from "@/store/properties";
 
@@ -37,6 +38,7 @@ export default function HomeRoute() {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // Home is admin-only. Bounce non-bookers to their primary tab.
   if (identity.role !== "booker") {
@@ -50,6 +52,7 @@ export default function HomeRoute() {
     setName("");
     setAddress("");
     setNotes("");
+    setSaving(false);
   }
 
   function startAdd() {
@@ -73,24 +76,49 @@ export default function HomeRoute() {
     else Alert.alert(title, msg);
   }
 
-  function submit() {
-    if (!name.trim()) return notify("Name required", "Give the property a short name.");
-    if (!address.trim()) return notify("Address required", "Type the address.");
-    if (editorMode.kind === "editing") {
-      updateProperty(editorMode.id, {
-        name: name.trim(),
-        address: address.trim(),
-        notes: notes.trim() || undefined,
-      });
-    } else {
-      addProperty({
-        name: name.trim(),
-        address: address.trim(),
-        notes: notes.trim() || undefined,
-        ownerId: identity.id,
-      });
+  async function submit() {
+    if (!name.trim())
+      return notify("Name required", "Give the property a short name.");
+    if (!address.trim())
+      return notify("Address required", "Type the address.");
+    if (saving) return; // double-tap guard
+
+    const trimmedName = name.trim();
+    const trimmedAddress = address.trim();
+    const trimmedNotes = notes.trim() || undefined;
+    setSaving(true);
+    try {
+      if (editorMode.kind === "editing") {
+        // Only re-geocode when the address actually changed; renaming the
+        // property or editing notes shouldn't trigger a network round-trip.
+        const existing = properties.find((p) => p.id === editorMode.id);
+        const addressChanged = !existing || existing.address !== trimmedAddress;
+        const coords = addressChanged
+          ? await geocodeAddress(trimmedAddress)
+          : null;
+        updateProperty(editorMode.id, {
+          name: trimmedName,
+          address: trimmedAddress,
+          notes: trimmedNotes,
+          ...(addressChanged
+            ? { latitude: coords?.latitude, longitude: coords?.longitude }
+            : {}),
+        });
+      } else {
+        const coords = await geocodeAddress(trimmedAddress);
+        addProperty({
+          name: trimmedName,
+          address: trimmedAddress,
+          notes: trimmedNotes,
+          ownerId: identity.id,
+          latitude: coords?.latitude,
+          longitude: coords?.longitude,
+        });
+      }
+      reset();
+    } finally {
+      setSaving(false);
     }
-    reset();
   }
 
   function confirmDelete(id: string, label: string) {
@@ -220,9 +248,13 @@ export default function HomeRoute() {
               <View style={styles.formButtons}>
                 <Pressable
                   onPress={reset}
+                  disabled={saving}
                   style={({ pressed }) => [
                     styles.btnGhost,
-                    { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                    {
+                      borderColor: colors.border,
+                      opacity: saving ? 0.4 : pressed ? 0.7 : 1,
+                    },
                   ]}
                 >
                   <Text style={[styles.btnGhostText, { color: colors.text }]}>
@@ -231,13 +263,21 @@ export default function HomeRoute() {
                 </Pressable>
                 <Pressable
                   onPress={submit}
+                  disabled={saving}
                   style={({ pressed }) => [
                     styles.btnPrimary,
-                    { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
+                    {
+                      backgroundColor: BRAND,
+                      opacity: saving ? 0.6 : pressed ? 0.85 : 1,
+                    },
                   ]}
                 >
                   <Text style={styles.btnPrimaryText}>
-                    {editorMode.kind === "editing" ? "Save changes" : "Save property"}
+                    {saving
+                      ? "Looking up address…"
+                      : editorMode.kind === "editing"
+                        ? "Save changes"
+                        : "Save property"}
                   </Text>
                 </Pressable>
               </View>

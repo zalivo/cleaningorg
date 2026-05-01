@@ -4,10 +4,17 @@ export interface Property {
   address: string;
   notes?: string;
   ownerId: string; // booker/admin identity id
-  // Optional coordinates. When present, the embedded map renders these
-  // directly (Google's ?output=embed view doesn't geocode free-text query
-  // strings reliably). Manually-added properties leave these undefined and
-  // fall back to the address-only view, which is fine for the demo.
+  /**
+   * Coordinates for the embedded map. Resolved via OSM Nominatim
+   * (`src/lib/geocode.ts`) when the booker adds or edits a property —
+   * see the home form for the call site. Optional only because the
+   * geocode call can fail (network down, address that doesn't resolve);
+   * the address-only embed is the graceful fallback.
+   *
+   * Seed values were resolved against Nominatim and rounded to four
+   * decimal places (~10 m precision — comfortable inside the marker
+   * footprint at zoom 15).
+   */
   latitude?: number;
   longitude?: number;
 }
@@ -15,29 +22,29 @@ export interface Property {
 export const seedProperties: Property[] = [
   {
     id: "p1",
-    name: "Evergreen House",
-    address: "742 Evergreen Terrace",
-    notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
+    name: "Pařížská Apartment",
+    address: "Pařížská 5, 110 00 Praha 1",
+    notes: "Vchodový kód 4815. V zahradě je hodný pes (Rex).",
     ownerId: "booker-1",
-    latitude: 39.7817,
-    longitude: -89.6501,
+    latitude: 50.0883,
+    longitude: 14.4199,
   },
   {
     id: "p2",
-    name: "Market St Office",
-    address: "500 Market St, Floor 3",
-    notes: "Reception will let the cleaner in. After-hours only.",
+    name: "Václavák Office",
+    address: "Václavské náměstí 56, 110 00 Praha 1",
+    notes: "Recepce pustí uklízeče dovnitř. Pouze po pracovní době.",
     ownerId: "booker-1",
-    latitude: 37.7891,
-    longitude: -122.3994,
+    latitude: 50.0801,
+    longitude: 14.4286,
   },
   {
     id: "p3",
-    name: "Bayview Condo",
-    address: "12 Bayview Ave, Apt 7B",
-    notes: "Buzzer #7B. Spare key under the planter.",
+    name: "Vinohrady Flat",
+    address: "Korunní 67, 120 00 Praha 2",
+    notes: "Zvonek #7B. Náhradní klíč pod květináčem.",
     ownerId: "booker-1",
-    latitude: 37.708,
-    longitude: -122.3796,
+    latitude: 50.0754,
+    longitude: 14.4482,
   },
 ];

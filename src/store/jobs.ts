@@ -252,6 +252,10 @@ export const useJobsStore = create<JobsState>()(
       resetDemo: () => set({ jobs: seedJobs }),
     }),
     {
+      // v7 = seed addresses migrated to real Prague locations with
+      //      Nominatim-resolved coords (same shape as v6). Old v6 jobs
+      //      reference US fixtures that would render off-continent on
+      //      the embedded map.
       // v6 = currency switched from USD to CZK (Kč). Types are identical to
       //      v5 but priceCents now means haléře, not US cents, and seed
       //      values jumped 10× to realistic Czech rates. Bumping the key
@@ -262,7 +266,7 @@ export const useJobsStore = create<JobsState>()(
       // v2 = property-based job model (was: service-based with totalPrice).
       // Key bumps orphan old payloads instead of hydrating malformed state
       // into the new types.
-      name: "cleaningorg/jobs.v6",
+      name: "cleaningorg/jobs.v7",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

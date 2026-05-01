@@ -65,10 +65,10 @@ export const seedJobs: Job[] = [
   {
     id: "j1",
     propertyId: "p1",
-    propertyName: "Evergreen House",
-    address: "742 Evergreen Terrace",
-    latitude: 39.7817,
-    longitude: -89.6501,
+    propertyName: "Pařížská Apartment",
+    address: "Pařížská 5, 110 00 Praha 1",
+    latitude: 50.0883,
+    longitude: 14.4199,
     bookerId: "booker-1",
     cleanerId: "1",
     cleanerName: "Maria Santos",
@@ -77,7 +77,7 @@ export const seedJobs: Job[] = [
     scheduledStart: "2026-05-04T10:00:00.000Z",
     scheduledEnd: "2026-05-04T12:00:00.000Z",
     priceCents: 70000, // Maria Santos 350 Kč/hr × 2h
-    notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
+    notes: "Vchodový kód 4815. V zahradě je hodný pes (Rex).",
     status: "ready-to-clean",
     declineCount: 0,
     createdAt: "2026-05-01T08:00:00.000Z",
@@ -85,10 +85,10 @@ export const seedJobs: Job[] = [
   {
     id: "j2",
     propertyId: "p1",
-    propertyName: "Evergreen House",
-    address: "742 Evergreen Terrace",
-    latitude: 39.7817,
-    longitude: -89.6501,
+    propertyName: "Pařížská Apartment",
+    address: "Pařížská 5, 110 00 Praha 1",
+    latitude: 50.0883,
+    longitude: 14.4199,
     bookerId: "booker-1",
     cleanerId: "1",
     cleanerName: "Maria Santos",
@@ -99,7 +99,7 @@ export const seedJobs: Job[] = [
     actualStart: "2026-05-02T09:15:00.000Z",
     actualEnd: "2026-05-02T13:30:00.000Z",
     priceCents: 140000, // Maria Santos 350 Kč/hr × 4h
-    notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
+    notes: "Vchodový kód 4815. V zahradě je hodný pes (Rex).",
     status: "ready-for-review",
     checklist: [
       { room: "Kitchen", done: true },
@@ -120,10 +120,10 @@ export const seedJobs: Job[] = [
   {
     id: "j3",
     propertyId: "p2",
-    propertyName: "Market St Office",
-    address: "500 Market St, Floor 3",
-    latitude: 37.7891,
-    longitude: -122.3994,
+    propertyName: "Václavák Office",
+    address: "Václavské náměstí 56, 110 00 Praha 1",
+    latitude: 50.0801,
+    longitude: 14.4286,
     bookerId: "booker-1",
     cleanerId: "3",
     cleanerName: "Aisha Patel",
@@ -134,7 +134,7 @@ export const seedJobs: Job[] = [
     actualStart: "2026-04-15T18:00:00.000Z",
     actualEnd: "2026-04-15T20:45:00.000Z",
     priceCents: 120000, // Aisha Patel 400 Kč/hr × 3h
-    notes: "Reception will let the cleaner in. After-hours only.",
+    notes: "Recepce pustí uklízeče dovnitř. Pouze po pracovní době.",
     status: "done",
     declineCount: 0,
     reviewerNotes: [
