@@ -1,9 +1,32 @@
+import * as Notifications from "expo-notifications";
+import { Stack, useRouter } from "expo-router";
+import { useEffect } from "react";
+import { Platform, View } from "react-native";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastContainer } from "@/components/toast";
-import { Stack } from "expo-router";
-import { View } from "react-native";
+import {
+  ensureNotificationPermission,
+  installNotificationHandler,
+  readPayload,
+} from "@/lib/notifications";
 
 export default function Layout() {
+  const router = useRouter();
+
+  useEffect(() => {
+    installNotificationHandler();
+    ensureNotificationPermission();
+
+    if (Platform.OS === "web") return;
+    const sub = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const { jobId } = readPayload(response.notification.request.content.data);
+        if (jobId) router.push(`/jobs/${jobId}`);
+      }
+    );
+    return () => sub.remove();
+  }, [router]);
+
   return (
     <ThemeProvider>
       <View style={{ flex: 1 }}>
