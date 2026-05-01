@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -30,7 +30,7 @@ import {
   professionals,
 } from "@/data/professionals";
 import { getReviewer, reviewers } from "@/data/reviewers";
-import { type MessageKey, useT } from "@/lib/i18n";
+import { type MessageKey, useLocaleStore, useT } from "@/lib/i18n";
 import { useCelebrateStore } from "@/store/celebrate";
 import { useActiveIdentity } from "@/store/identity";
 import { useJobsStore } from "@/store/jobs";
@@ -62,6 +62,13 @@ const STEP_TITLE_KEYS: Record<Step, MessageKey> = {
 interface ScheduledWindow {
   startISO: string;
   endISO: string;
+}
+
+interface RecentEntry {
+  id: string;
+  name: string;
+  jobCount: number;
+  lastDate: string;
 }
 
 function defaultStart(): Date {
@@ -99,6 +106,13 @@ function formatHours(h: number): string {
   return `${h.toFixed(1)} hr`;
 }
 
+function formatRecentDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function notify(title: string, message: string) {
   if (Platform.OS === "web") {
     window.alert(`${title}\n\n${message}`);
@@ -133,6 +147,8 @@ export default function BookRoute() {
   const [notes, setNotes] = useState<string>(property?.notes ?? "");
   const [step, setStep] = useState<Step>(1);
 
+  const allJobs = useJobsStore((s) => s.jobs);
+
   // `now` used for both the picker's minimumDate and the runtime past-time
   // guard at submit. Recomputed every render so a long-open form catches
   // drift past the hour.
@@ -150,6 +166,40 @@ export default function BookRoute() {
   const reviewerFeeCents = reviewer?.feeCents ?? 0;
   const priceCents = cleanerPayCents + reviewerFeeCents;
   const hours = estimatedHours(scheduledWindow.startISO, scheduledWindow.endISO);
+
+  // Past collaborators at this property — powers the rehire-with-one-tap rows
+  // in step 2. Done jobs only; declined or in-flight aren't a track record.
+  const recentAtProperty = useMemo(() => {
+    const byCleaner = new Map<string, RecentEntry>();
+    const byReviewer = new Map<string, RecentEntry>();
+    const upsert = (
+      m: Map<string, RecentEntry>,
+      id: string,
+      name: string,
+      dateISO: string
+    ) => {
+      const existing = m.get(id);
+      if (!existing) {
+        m.set(id, { id, name, jobCount: 1, lastDate: dateISO });
+        return;
+      }
+      existing.jobCount += 1;
+      if (dateISO > existing.lastDate) existing.lastDate = dateISO;
+    };
+    if (propertyId) {
+      for (const j of allJobs) {
+        if (j.propertyId !== propertyId || j.status !== "done") continue;
+        upsert(byCleaner, j.cleanerId, j.cleanerName, j.scheduledStart);
+        upsert(byReviewer, j.reviewerId, j.reviewerName, j.scheduledStart);
+      }
+    }
+    const byRecency = (a: RecentEntry, b: RecentEntry) =>
+      b.lastDate.localeCompare(a.lastDate);
+    return {
+      cleaners: Array.from(byCleaner.values()).sort(byRecency),
+      reviewers: Array.from(byReviewer.values()).sort(byRecency),
+    };
+  }, [allJobs, propertyId]);
 
   /**
    * Apply a picker's resulting Date to `scheduledStart`. `mode === "date"`
@@ -484,6 +534,15 @@ export default function BookRoute() {
               </View>
             </Field>
 
+            {recentAtProperty.cleaners.length > 0 && (
+              <RecentList
+                label={t("book.history.cleanerSection")}
+                entries={recentAtProperty.cleaners}
+                currentId={cleanerId}
+                onPick={setCleanerId}
+              />
+            )}
+
             <Field label={t("book.reviewer")}>
               <View style={styles.chipsWrap}>
                 {reviewers.map((r) => (
@@ -497,6 +556,15 @@ export default function BookRoute() {
                 ))}
               </View>
             </Field>
+
+            {recentAtProperty.reviewers.length > 0 && (
+              <RecentList
+                label={t("book.history.reviewerSection")}
+                entries={recentAtProperty.reviewers}
+                currentId={reviewerId}
+                onPick={setReviewerId}
+              />
+            )}
           </>
         )}
 
@@ -792,6 +860,39 @@ function Chip({
         </Text>
       )}
     </Pressable>
+  );
+}
+
+function RecentList({
+  label,
+  entries,
+  currentId,
+  onPick,
+}: {
+  label: string;
+  entries: RecentEntry[];
+  currentId: string;
+  onPick: (id: string) => void;
+}) {
+  const t = useT();
+  const locale = useLocaleStore((s) => s.locale);
+  return (
+    <Field label={label}>
+      <View style={styles.chipsWrap}>
+        {entries.map((entry) => (
+          <Chip
+            key={entry.id}
+            label={entry.name}
+            hint={t("book.history.hint", {
+              count: entry.jobCount,
+              date: formatRecentDate(entry.lastDate, locale),
+            })}
+            selected={entry.id === currentId}
+            onPress={() => onPick(entry.id)}
+          />
+        ))}
+      </View>
+    </Field>
   );
 }
 

@@ -122,6 +122,11 @@ export const sk: LocaleMessages = {
       pastTimeTitle: "Minulý čas",
       pastTimeBody: "Plánovaný začiatok je v minulosti. Vyberte čas v budúcnosti.",
     },
+    history: {
+      cleanerSection: "Nedávni upratovači",
+      reviewerSection: "Nedávni kontrolóri",
+      hint: "{count}× · {date}",
+    },
   },
   job: {
     title: "Detail upratania",
