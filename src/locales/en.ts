@@ -138,6 +138,7 @@ export const en = {
     cleanedShort: "Re-cleaned {count}×",
     scheduledLine: "Scheduled: {window}",
     actualLine: "Actual: {window}",
+    you: "You",
     started: "Started: {when}",
     total: "Total: {price}",
     totalLabel: "Total",

@@ -137,6 +137,7 @@ export const sk: LocaleMessages = {
     cleanedShort: "Prerobené {count}×",
     scheduledLine: "Plán: {window}",
     actualLine: "Skutočnosť: {window}",
+    you: "Ty",
     started: "Začiatok: {when}",
     total: "Spolu: {price}",
     totalLabel: "Spolu",

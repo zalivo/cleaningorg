@@ -31,6 +31,14 @@ export default function Layout() {
             }}
           />
           <Stack.Screen
+            name="reviewers/[id]"
+            options={{
+              headerShown: true,
+              title: "",
+              headerBackTitle: t("job.actions.back"),
+            }}
+          />
+          <Stack.Screen
             name="jobs/[id]"
             options={{
               headerShown: true,

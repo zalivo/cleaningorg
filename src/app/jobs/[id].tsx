@@ -201,19 +201,37 @@ export default function JobDetailRoute() {
           </View>
         )}
         {actual && <Row icon="time-outline" text={actual} />}
-        <Row
-          icon="person-circle-outline"
-          text={t("job.cleanerLabel", { name: job.cleanerName })}
-          onPress={() => router.push(`/pros/${job.cleanerId}`)}
-        />
-        <Row
-          icon="shield-checkmark-outline"
-          text={t("job.reviewerLabel", { name: job.reviewerName })}
-        />
-        {/* Booker pays the combined total — show that, plus the reviewer-
-            fee breakdown so they can see where their money goes. Each
-            worker only sees their own payout: cleaner gets priceCents
-            minus the reviewer fee, reviewer gets the flat reviewer fee. */}
+        {/* Each viewer hides their OWN row — they already know who they
+            are. Booker sees both names inlined with each party's pay so
+            the total below reads as a sum of two visible items. Cleaner
+            and reviewer see only the other party's name (no price), plus
+            their own payout further down. */}
+        {!isAssignedCleaner && (
+          <Row
+            icon="person-circle-outline"
+            text={
+              identity.role === "booker"
+                ? `${t("job.cleanerLabel", { name: job.cleanerName })} · ${formatPrice(
+                    job.priceCents - (job.reviewerFeeCents ?? 0),
+                  )}`
+                : t("job.cleanerLabel", { name: job.cleanerName })
+            }
+            onPress={() => router.push(`/pros/${job.cleanerId}`)}
+          />
+        )}
+        {!isAssignedReviewer && (
+          <Row
+            icon="shield-checkmark-outline"
+            text={
+              identity.role === "booker"
+                ? `${t("job.reviewerLabel", { name: job.reviewerName })} · ${formatPrice(
+                    job.reviewerFeeCents ?? 0,
+                  )}`
+                : t("job.reviewerLabel", { name: job.reviewerName })
+            }
+            onPress={() => router.push(`/reviewers/${job.reviewerId}`)}
+          />
+        )}
         {identity.role === "cleaner" ? (
           <Row
             icon="cash-outline"
@@ -231,28 +249,10 @@ export default function JobDetailRoute() {
             })}
           />
         ) : (
-          <>
-            <Row
-              icon="person-circle-outline"
-              text={t("job.cleanerPayLabel", {
-                price: formatPrice(
-                  job.priceCents - (job.reviewerFeeCents ?? 0),
-                ),
-              })}
-            />
-            {job.reviewerFeeCents !== undefined && job.reviewerFeeCents > 0 && (
-              <Row
-                icon="shield-checkmark-outline"
-                text={t("job.reviewerFeeLabel", {
-                  price: formatPrice(job.reviewerFeeCents),
-                })}
-              />
-            )}
-            <Row
-              icon="cash-outline"
-              text={t("job.total", { price: formatPrice(job.priceCents) })}
-            />
-          </>
+          <Row
+            icon="cash-outline"
+            text={t("job.total", { price: formatPrice(job.priceCents) })}
+          />
         )}
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
       </View>
@@ -458,7 +458,11 @@ export default function JobDetailRoute() {
           </Text>
         ) : (
           cleanerNotes.map((n) => (
-            <NoteRow key={n.id} note={n} authorLabel={job.cleanerName} />
+            <NoteRow
+              key={n.id}
+              note={n}
+              authorLabel={isAssignedCleaner ? t("job.you") : job.cleanerName}
+            />
           ))
         )}
         {showCleanerComposer && (
@@ -480,7 +484,11 @@ export default function JobDetailRoute() {
           </Text>
         ) : (
           reviewerNotes.map((n) => (
-            <NoteRow key={n.id} note={n} authorLabel={job.reviewerName} />
+            <NoteRow
+              key={n.id}
+              note={n}
+              authorLabel={isAssignedReviewer ? t("job.you") : job.reviewerName}
+            />
           ))
         )}
         {showReviewerComposer && (
