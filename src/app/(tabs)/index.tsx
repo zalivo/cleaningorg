@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import {
   View,
   Text,
@@ -21,6 +21,13 @@ export default function HomeRoute() {
   const { colors } = useTheme();
   const router = useRouter();
   const identity = useActiveIdentity();
+
+  // Home is booker-only. If a non-booker lands here (e.g. cold reload while
+  // their role is active), bounce them to their primary tab.
+  if (identity.role !== "booker") {
+    return <Redirect href="/(tabs)/jobs" />;
+  }
+
   const firstName = identity.name.split(" ")[0];
   const topPros = [...professionals]
     .sort((a, b) => b.rating - a.rating)
