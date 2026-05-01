@@ -13,26 +13,48 @@ import {
   Platform,
 } from "react-native";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
-import { getProfessional } from "@/data/professionals";
+import { getProfessional, professionals } from "@/data/professionals";
+import { reviewers } from "@/data/reviewers";
 import { type ServiceId, services } from "@/data/services";
+import { useActiveIdentity } from "@/store/identity";
+import { useJobsStore } from "@/store/jobs";
 
 const DATE_OPTIONS = [
-  { id: "tomorrow", label: "Tomorrow" },
-  { id: "in-2-days", label: "In 2 days" },
-  { id: "weekend", label: "This weekend" },
-  { id: "next-week", label: "Next week" },
+  { id: "tomorrow", label: "Tomorrow", offsetDays: 1 },
+  { id: "in-2-days", label: "In 2 days", offsetDays: 2 },
+  { id: "weekend", label: "This weekend", offsetDays: 5 },
+  { id: "next-week", label: "Next week", offsetDays: 7 },
 ];
 
 const TIME_OPTIONS = [
-  { id: "morning", label: "Morning", hint: "8am – 12pm" },
-  { id: "afternoon", label: "Afternoon", hint: "12pm – 5pm" },
-  { id: "evening", label: "Evening", hint: "5pm – 9pm" },
+  { id: "morning", label: "Morning", hint: "8am – 12pm", hour: 9 },
+  { id: "afternoon", label: "Afternoon", hint: "12pm – 5pm", hour: 14 },
+  { id: "evening", label: "Evening", hint: "5pm – 9pm", hour: 18 },
 ];
+
+function resolveDate(dateId: string, timeId: string): string {
+  const dOpt = DATE_OPTIONS.find((d) => d.id === dateId) ?? DATE_OPTIONS[0];
+  const tOpt = TIME_OPTIONS.find((t) => t.id === timeId) ?? TIME_OPTIONS[0];
+  const d = new Date();
+  d.setDate(d.getDate() + dOpt.offsetDays);
+  d.setHours(tOpt.hour, 0, 0, 0);
+  return d.toISOString();
+}
+
+function notify(title: string, message: string) {
+  if (Platform.OS === "web") {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+}
 
 export default function BookRoute() {
   const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ serviceId?: string; proId?: string }>();
+  const identity = useActiveIdentity();
+  const bookJob = useJobsStore((s) => s.bookJob);
 
   const initialService = params.serviceId
     ? (params.serviceId as ServiceId)
@@ -44,27 +66,54 @@ export default function BookRoute() {
   const [timeId, setTimeId] = useState<string>(TIME_OPTIONS[0].id);
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [cleanerId, setCleanerId] = useState<string>(
+    preselectedPro?.id ?? professionals[0].id
+  );
+  const [reviewerId, setReviewerId] = useState<string>(reviewers[0].id);
 
   const service = services.find((s) => s.id === serviceId)!;
 
   const handleConfirm = () => {
     if (!address.trim()) {
-      if (Platform.OS === "web") {
-        window.alert("Please enter the address for the cleaning.");
-      } else {
-        Alert.alert("Address required", "Please enter the address for the cleaning.");
-      }
+      notify("Address required", "Please enter the address for the cleaning.");
       return;
     }
-    const message = `Booked ${service.name}${
-      preselectedPro ? ` with ${preselectedPro.name}` : ""
-    } for $${service.price}.`;
-    if (Platform.OS === "web") {
-      window.alert(message);
-    } else {
-      Alert.alert("Booking confirmed", message);
+    if (!cleanerId) {
+      notify("Cleaner required", "Please pick a cleaner.");
+      return;
     }
-    router.back();
+    if (!reviewerId) {
+      notify("Reviewer required", "Please pick a reviewer.");
+      return;
+    }
+    if (identity.role !== "booker") {
+      notify(
+        "Switch to booker",
+        "Only the booker identity can create new bookings. Switch from the Profile tab."
+      );
+      return;
+    }
+
+    const cleaner = getProfessional(cleanerId);
+    const reviewer = reviewers.find((r) => r.id === reviewerId);
+    if (!cleaner || !reviewer) {
+      notify("Booking failed", "Selected cleaner or reviewer no longer exists.");
+      return;
+    }
+
+    bookJob({
+      serviceId,
+      bookerId: identity.id,
+      cleanerId: cleaner.id,
+      cleanerName: cleaner.name,
+      reviewerId: reviewer.id,
+      reviewerName: reviewer.name,
+      date: resolveDate(dateId, timeId),
+      address: address.trim(),
+      notes: notes.trim() || undefined,
+    });
+
+    router.replace("/(tabs)/jobs");
   };
 
   return (
@@ -76,7 +125,8 @@ export default function BookRoute() {
         <View style={[styles.proBanner, { backgroundColor: BRAND_LIGHT }]}>
           <Ionicons name="person-circle" size={20} color={BRAND} />
           <Text style={styles.proBannerText}>
-            Booking with <Text style={{ fontWeight: "700" }}>{preselectedPro.name}</Text>
+            Pre-selected:{" "}
+            <Text style={{ fontWeight: "700" }}>{preselectedPro.name}</Text>
           </Text>
         </View>
       )}
@@ -138,6 +188,34 @@ export default function BookRoute() {
         />
       </Field>
 
+      <Field label="Cleaner">
+        <View style={styles.chipsWrap}>
+          {professionals.map((p) => (
+            <Chip
+              key={p.id}
+              label={p.name}
+              hint={`★ ${p.rating.toFixed(1)}`}
+              selected={p.id === cleanerId}
+              onPress={() => setCleanerId(p.id)}
+            />
+          ))}
+        </View>
+      </Field>
+
+      <Field label="Reviewer">
+        <View style={styles.chipsWrap}>
+          {reviewers.map((r) => (
+            <Chip
+              key={r.id}
+              label={r.name}
+              hint={`★ ${r.rating.toFixed(1)}`}
+              selected={r.id === reviewerId}
+              onPress={() => setReviewerId(r.id)}
+            />
+          ))}
+        </View>
+      </Field>
+
       <Field label="Notes (optional)">
         <TextInput
           value={notes}
@@ -158,7 +236,12 @@ export default function BookRoute() {
         />
       </Field>
 
-      <View style={[styles.summary, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.summary,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
         <View style={styles.summaryRow}>
           <Text style={[styles.summaryLabel, { color: colors.text }]}>
             {service.name}
@@ -175,7 +258,13 @@ export default function BookRoute() {
             {service.durationHours}h
           </Text>
         </View>
-        <View style={[styles.summaryRow, styles.summaryTotal, { borderTopColor: colors.border }]}>
+        <View
+          style={[
+            styles.summaryRow,
+            styles.summaryTotal,
+            { borderTopColor: colors.border },
+          ]}
+        >
           <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
           <Text style={[styles.totalValue, { color: BRAND }]}>
             ${service.price}
@@ -196,7 +285,13 @@ export default function BookRoute() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   const { colors } = useTheme();
   return (
     <View style={styles.field}>
@@ -253,11 +348,7 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-    gap: 18,
-  },
+  content: { padding: 16, paddingBottom: 40, gap: 18 },
   proBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -265,37 +356,18 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
   },
-  proBannerText: {
-    fontSize: 14,
-    color: "#0B5557",
-  },
-  field: {
-    gap: 8,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  chipsWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
+  proBannerText: { fontSize: 14, color: "#0B5557" },
+  field: { gap: 8 },
+  fieldLabel: { fontSize: 14, fontWeight: "600" },
+  chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 999,
     borderWidth: 1,
   },
-  chipLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  chipHint: {
-    fontSize: 11,
-    marginTop: 2,
-    opacity: 0.85,
-  },
+  chipLabel: { fontSize: 14, fontWeight: "600" },
+  chipHint: { fontSize: 11, marginTop: 2, opacity: 0.85 },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 12,
@@ -303,48 +375,26 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
   },
-  multiline: {
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
+  multiline: { minHeight: 80, textAlignVertical: "top" },
   summary: {
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 14,
     gap: 10,
   },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  summaryLabel: {
-    fontSize: 14,
-    opacity: 0.8,
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  summaryRow: { flexDirection: "row", justifyContent: "space-between" },
+  summaryLabel: { fontSize: 14, opacity: 0.8 },
+  summaryValue: { fontSize: 14, fontWeight: "600" },
   summaryTotal: {
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: 10,
   },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
+  totalLabel: { fontSize: 16, fontWeight: "600" },
+  totalValue: { fontSize: 18, fontWeight: "700" },
   confirm: {
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
   },
-  confirmText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  confirmText: { color: "white", fontSize: 16, fontWeight: "700" },
 });
