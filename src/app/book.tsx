@@ -115,6 +115,8 @@ export default function BookRoute() {
       propertyId: property.id,
       propertyName: property.name,
       address: property.address,
+      latitude: property.latitude,
+      longitude: property.longitude,
       bookerId: identity.id,
       cleanerId: cleaner.id,
       cleanerName: cleaner.name,

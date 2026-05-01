@@ -52,7 +52,8 @@ export const usePropertiesStore = create<PropertiesState>()(
       resetDemo: () => set({ properties: seedProperties }),
     }),
     {
-      name: "cleaningorg/properties",
+      // v2 = adds optional latitude/longitude on properties.
+      name: "cleaningorg/properties.v2",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

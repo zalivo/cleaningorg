@@ -16,6 +16,8 @@ export interface Job {
   propertyId: string;
   propertyName: string; // snapshotted at book time
   address: string;      // snapshotted at book time
+  latitude?: number;    // snapshotted at book time
+  longitude?: number;   // snapshotted at book time
   bookerId: string;
   cleanerId: string;
   cleanerName: string;
@@ -37,6 +39,8 @@ export const seedJobs: Job[] = [
     propertyId: "p1",
     propertyName: "Evergreen House",
     address: "742 Evergreen Terrace",
+    latitude: 39.7817,
+    longitude: -89.6501,
     bookerId: "booker-1",
     cleanerId: "1",
     cleanerName: "Maria Santos",
@@ -53,6 +57,8 @@ export const seedJobs: Job[] = [
     propertyId: "p1",
     propertyName: "Evergreen House",
     address: "742 Evergreen Terrace",
+    latitude: 39.7817,
+    longitude: -89.6501,
     bookerId: "booker-1",
     cleanerId: "1",
     cleanerName: "Maria Santos",
@@ -75,6 +81,8 @@ export const seedJobs: Job[] = [
     propertyId: "p2",
     propertyName: "Market St Office",
     address: "500 Market St, Floor 3",
+    latitude: 37.7891,
+    longitude: -122.3994,
     bookerId: "booker-1",
     cleanerId: "3",
     cleanerName: "Aisha Patel",

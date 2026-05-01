@@ -205,8 +205,21 @@ export function EmbeddedMap({
           )}
         </>
       ) : WebView ? (
+        // Google Maps' ?output=embed view refuses to render outside an
+        // iframe ("must be used in an iframe"). On native, wrap the URL in
+        // a tiny HTML document with an <iframe> so the page loaded into the
+        // WebView satisfies that constraint. Note: ampersands in the iframe
+        // src must be HTML-encoded (`&amp;`) — without that, the parser
+        // strips the query string and we end up on the world-view fallback.
         <WebView
-          source={{ uri: target.url }}
+          originWhitelist={["*"]}
+          source={{
+            html: `<!doctype html><html><head><meta name="viewport" content="initial-scale=1,width=device-width"><style>html,body,iframe{margin:0;padding:0;border:0;width:100%;height:100%;}</style></head><body><iframe src="${target.url.replace(
+              /&/g,
+              "&amp;"
+            )}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></body></html>`,
+            baseUrl: "https://www.google.com",
+          }}
           style={styles.webview}
           startInLoadingState
         />

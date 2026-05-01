@@ -147,6 +147,8 @@ export default function JobDetailRoute() {
         </Text>
         <EmbeddedMap
           address={job.address}
+          latitude={job.latitude}
+          longitude={job.longitude}
           height={200}
           showOpenButton={false}
         />

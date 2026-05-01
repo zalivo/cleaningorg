@@ -21,6 +21,8 @@ export interface BookJobInput {
   propertyId: string;
   propertyName: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
   bookerId: string;
   cleanerId: string;
   cleanerName: string;
@@ -58,6 +60,8 @@ export const useJobsStore = create<JobsState>()(
           propertyId: input.propertyId,
           propertyName: input.propertyName,
           address: input.address,
+          latitude: input.latitude,
+          longitude: input.longitude,
           bookerId: input.bookerId,
           cleanerId: input.cleanerId,
           cleanerName: input.cleanerName,
@@ -147,10 +151,11 @@ export const useJobsStore = create<JobsState>()(
       resetDemo: () => set({ jobs: seedJobs }),
     }),
     {
+      // v3 = adds optional latitude/longitude snapshots for the embedded map.
       // v2 = property-based job model (was: service-based with totalPrice).
-      // Key bump is the simplest migration: orphans old payloads instead of
-      // hydrating malformed state into the new types.
-      name: "cleaningorg/jobs.v2",
+      // Key bumps orphan old payloads instead of hydrating malformed state
+      // into the new types.
+      name: "cleaningorg/jobs.v3",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
