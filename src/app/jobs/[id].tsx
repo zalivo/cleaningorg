@@ -22,6 +22,7 @@ import {
   type JobStatus,
   formatJobDate,
   formatJobWindow,
+  formatPrice,
   isJobLate,
 } from "@/data/jobs";
 import { openMapsForAddress } from "@/lib/maps";
@@ -182,6 +183,10 @@ export default function JobDetailRoute() {
         <Row
           icon="shield-checkmark-outline"
           text={`Reviewer: ${job.reviewerName}`}
+        />
+        <Row
+          icon="cash-outline"
+          text={`Total: ${formatPrice(job.priceCents)}`}
         />
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
       </View>

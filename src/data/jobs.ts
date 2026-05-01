@@ -40,6 +40,14 @@ export interface Job {
   /** Stamped automatically on the `ready-for-review` transition. */
   actualEnd?: string; // ISO
 
+  /**
+   * Total price for the job in integer cents (single currency v1).
+   * Snapshotted at booking time as the cleaner's `hourlyRate` × the
+   * scheduled duration in hours. Stays put if rate or window later
+   * change; this is a transactional record, not a recomputation.
+   */
+  priceCents: number;
+
   notes?: string;
   status: JobStatus;
   checklist?: ChecklistItem[];
@@ -66,6 +74,7 @@ export const seedJobs: Job[] = [
     reviewerName: "Priya Sharma",
     scheduledStart: "2026-05-04T10:00:00.000Z",
     scheduledEnd: "2026-05-04T12:00:00.000Z",
+    priceCents: 7000, // Maria Santos $35/hr × 2h
     notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-to-clean",
     declineCount: 0,
@@ -87,6 +96,7 @@ export const seedJobs: Job[] = [
     scheduledEnd: "2026-05-02T13:00:00.000Z",
     actualStart: "2026-05-02T09:15:00.000Z",
     actualEnd: "2026-05-02T13:30:00.000Z",
+    priceCents: 14000, // Maria Santos $35/hr × 4h
     notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-for-review",
     checklist: [
@@ -121,6 +131,7 @@ export const seedJobs: Job[] = [
     scheduledEnd: "2026-04-15T21:00:00.000Z",
     actualStart: "2026-04-15T18:00:00.000Z",
     actualEnd: "2026-04-15T20:45:00.000Z",
+    priceCents: 12000, // Aisha Patel $40/hr × 3h
     notes: "Reception will let the cleaner in. After-hours only.",
     status: "done",
     declineCount: 0,
@@ -134,6 +145,48 @@ export const seedJobs: Job[] = [
     createdAt: "2026-04-14T08:00:00.000Z",
   },
 ];
+
+// ---------------- Pricing helpers ----------------
+
+const MS_PER_HOUR = 60 * 60 * 1000;
+
+/**
+ * Hours between two ISO timestamps, returned as a real number (e.g. 2.5).
+ * Order is `end - start`; callers pass the scheduled window in that order.
+ */
+export function estimatedHours(startISO: string, endISO: string): number {
+  return (
+    (new Date(endISO).getTime() - new Date(startISO).getTime()) / MS_PER_HOUR
+  );
+}
+
+/**
+ * Snapshot price in integer cents from an hourly rate (in dollars) and a
+ * scheduled window. Round once at this boundary so we never persist
+ * fractional cents.
+ */
+export function computePriceCents(
+  hourlyRate: number,
+  startISO: string,
+  endISO: string
+): number {
+  return Math.round(hourlyRate * estimatedHours(startISO, endISO) * 100);
+}
+
+/**
+ * Format integer cents for display:
+ *   7000  -> "$70"
+ *   7050  -> "$70.50"
+ * Whole-dollar amounts drop the trailing `.00` so the common path reads
+ * cleanly. Single currency v1 — no locale or symbol negotiation.
+ */
+export function formatPrice(cents: number): string {
+  const dollars = cents / 100;
+  if (Number.isInteger(dollars)) {
+    return `$${dollars.toLocaleString()}`;
+  }
+  return `$${dollars.toFixed(2)}`;
+}
 
 // ---------------- Format helpers ----------------
 

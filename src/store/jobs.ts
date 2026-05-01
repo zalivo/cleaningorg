@@ -33,6 +33,13 @@ export interface BookJobInput {
   scheduledStart: string;
   /** ISO end of the booker-set window. Required, must be after start. */
   scheduledEnd: string;
+  /**
+   * Snapshotted total in integer cents. Required — every job carries a
+   * price. Compute with `computePriceCents(cleaner.hourlyRate, start, end)`
+   * at the call site so the value matches the rate × duration shown to the
+   * booker at confirm time.
+   */
+  priceCents: number;
   notes?: string;
 }
 
@@ -105,6 +112,13 @@ export const useJobsStore = create<JobsState>()(
               `Received scheduledStart=${JSON.stringify(input.scheduledStart)}, scheduledEnd=${JSON.stringify(input.scheduledEnd)}.`
           );
         }
+        if (!Number.isFinite(input.priceCents) || input.priceCents < 0) {
+          throw new Error(
+            "Cannot create job: priceCents must be a non-negative finite integer. " +
+              "Compute the value with computePriceCents(cleaner.hourlyRate, scheduledStart, scheduledEnd) at the call site. " +
+              `Received priceCents=${JSON.stringify(input.priceCents)}.`
+          );
+        }
         const job: Job = {
           id: `j${Date.now()}`,
           propertyId: input.propertyId,
@@ -119,6 +133,7 @@ export const useJobsStore = create<JobsState>()(
           reviewerName: input.reviewerName,
           scheduledStart: input.scheduledStart,
           scheduledEnd: input.scheduledEnd,
+          priceCents: input.priceCents,
           notes: input.notes,
           status: "ready-to-clean",
           declineCount: 0,
@@ -236,12 +251,13 @@ export const useJobsStore = create<JobsState>()(
       resetDemo: () => set({ jobs: seedJobs }),
     }),
     {
+      // v5 = snapshotted priceCents on every Job (rate × hours at booking).
       // v4 = scheduled/actual time windows on Job (was: single `date`).
       // v3 = added optional latitude/longitude snapshots for the embedded map.
       // v2 = property-based job model (was: service-based with totalPrice).
       // Key bumps orphan old payloads instead of hydrating malformed state
       // into the new types.
-      name: "cleaningorg/jobs.v4",
+      name: "cleaningorg/jobs.v5",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
@@ -321,3 +337,45 @@ export function useHistoryForReviewer(reviewerId: string): Job[] {
 export function useJob(jobId: string): Job | undefined {
   return useJobsStore((s) => s.jobs.find((j) => j.id === jobId));
 }
+
+// ---------------- Cumulative totals (Profile screen) ----------------
+
+interface RoleTotals {
+  /** Sum of `priceCents` across realised (status === "done") jobs. */
+  totalCents: number;
+  /** Number of jobs in that sum. */
+  jobCount: number;
+}
+
+const ZERO_TOTALS: RoleTotals = { totalCents: 0, jobCount: 0 };
+
+function tally(jobs: Job[]): RoleTotals {
+  let totalCents = 0;
+  for (const j of jobs) totalCents += j.priceCents;
+  return { totalCents, jobCount: jobs.length };
+}
+
+/** Cumulative earnings for a cleaner across completed jobs. */
+export function useCleanerEarnings(cleanerId: string): RoleTotals {
+  return useJobsStore(
+    useShallow((s) =>
+      tally(
+        s.jobs.filter((j) => j.cleanerId === cleanerId && j.status === "done")
+      )
+    )
+  );
+}
+
+/** Cumulative spend for a booker across completed jobs. */
+export function useBookerSpend(bookerId: string): RoleTotals {
+  return useJobsStore(
+    useShallow((s) =>
+      tally(
+        s.jobs.filter((j) => j.bookerId === bookerId && j.status === "done")
+      )
+    )
+  );
+}
+
+export type { RoleTotals };
+export { ZERO_TOTALS };

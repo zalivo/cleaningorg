@@ -6,6 +6,7 @@ import {
   type Job,
   type JobStatus,
   formatJobWindow,
+  formatPrice,
   isJobLate,
 } from "@/data/jobs";
 
@@ -85,6 +86,11 @@ export function JobCard({ job, onPress }: Props) {
           </Text>
         </View>
       )}
+      <View style={styles.priceRow}>
+        <Text style={[styles.price, { color: BRAND }]}>
+          {formatPrice(job.priceCents)}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -119,4 +125,10 @@ const styles = StyleSheet.create({
   lateText: { fontSize: 11, fontWeight: "600", color: "#92400E" },
   declineRow: { backgroundColor: "#FEE2E2", padding: 6, borderRadius: 6 },
   declineText: { fontSize: 12, color: "#B91C1C", flex: 1 },
+  priceRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 2,
+  },
+  price: { fontSize: 16, fontWeight: "700" },
 });

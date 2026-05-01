@@ -13,8 +13,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ProAvatar } from "@/components/pro-avatar";
 import { BRAND } from "@/constants/colors";
 import { identities, type Role } from "@/data/identities";
+import { formatPrice } from "@/data/jobs";
 import { useActiveIdentity, useIdentityStore } from "@/store/identity";
-import { useJobsStore } from "@/store/jobs";
+import {
+  useBookerSpend,
+  useCleanerEarnings,
+  useJobsStore,
+} from "@/store/jobs";
 import { usePropertiesStore } from "@/store/properties";
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -29,6 +34,17 @@ export default function ProfileRoute() {
   const setActive = useIdentityStore((s) => s.setActiveIdentity);
   const resetJobs = useJobsStore((s) => s.resetDemo);
   const resetProperties = usePropertiesStore((s) => s.resetDemo);
+
+  // Both selectors run unconditionally (hooks rules); the unused branch
+  // for the active role just resolves to ZERO_TOTALS.
+  const cleanerEarnings = useCleanerEarnings(identity.id);
+  const bookerSpend = useBookerSpend(identity.id);
+  const totals =
+    identity.role === "cleaner"
+      ? { label: "Earnings", ...cleanerEarnings }
+      : identity.role === "booker"
+        ? { label: "Total spend", ...bookerSpend }
+        : null;
 
   function confirmReset() {
     const ok = () => {
@@ -69,6 +85,27 @@ export default function ProfileRoute() {
             </Text>
           </View>
         </View>
+
+        {totals && (
+          <View
+            style={[
+              styles.totalsCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.totalsLabel, { color: colors.text }]}>
+              {totals.label}
+            </Text>
+            <Text style={[styles.totalsValue, { color: BRAND }]}>
+              {formatPrice(totals.totalCents)}
+            </Text>
+            <Text style={[styles.totalsSub, { color: colors.text }]}>
+              {totals.jobCount === 0
+                ? "No completed jobs yet"
+                : `Across ${totals.jobCount} completed ${totals.jobCount === 1 ? "job" : "jobs"}`}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -160,6 +197,21 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   sectionHint: { fontSize: 13, opacity: 0.65 },
+  totalsCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    padding: 16,
+    gap: 4,
+  },
+  totalsLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    opacity: 0.6,
+    letterSpacing: 0.5,
+  },
+  totalsValue: { fontSize: 30, fontWeight: "700" },
+  totalsSub: { fontSize: 13, opacity: 0.7 },
   identityList: { gap: 10 },
   identityCard: {
     flexDirection: "row",
