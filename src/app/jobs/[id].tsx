@@ -17,7 +17,13 @@ import { EmbeddedMap } from "@/components/embedded-map";
 import { NoteComposer } from "@/components/note-composer";
 import { NoteRow } from "@/components/note-row";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
-import { type JobStatus, formatJobDate } from "@/data/jobs";
+import {
+  type Job,
+  type JobStatus,
+  formatJobDate,
+  formatJobWindow,
+  isJobLate,
+} from "@/data/jobs";
 import { openMapsForAddress } from "@/lib/maps";
 import { useActiveIdentity } from "@/store/identity";
 import { useJob, useJobsStore } from "@/store/jobs";
@@ -30,6 +36,20 @@ const STATUS_STYLES: Record<JobStatus, { bg: string; fg: string; label: string }
   done: { bg: "#E5E7EB", fg: "#374151", label: "Done" },
   cancelled: { bg: "#FEE2E2", fg: "#B91C1C", label: "Cancelled" },
 };
+
+/**
+ * Format the actual cleaning window for display. Returns `null` when no
+ * actual times have been stamped yet (i.e. cleaning hasn't started).
+ */
+function actualLine(job: Job): string | null {
+  if (job.actualStart && job.actualEnd) {
+    return `Actual: ${formatJobWindow(job.actualStart, job.actualEnd)}`;
+  }
+  if (job.actualStart) {
+    return `Started: ${formatJobDate(job.actualStart)}`;
+  }
+  return null;
+}
 
 export default function JobDetailRoute() {
   const { colors } = useTheme();
@@ -59,6 +79,8 @@ export default function JobDetailRoute() {
 
   const jobId = job.id;
   const status = STATUS_STYLES[job.status];
+  const actual = actualLine(job);
+  const late = isJobLate(job);
   const isAssignedCleaner =
     identity.role === "cleaner" && identity.id === job.cleanerId;
   const isAssignedReviewer =
@@ -139,7 +161,19 @@ export default function JobDetailRoute() {
           actionIcon="open-outline"
           accessibilityLabel={`Open ${job.address} in maps`}
         />
-        <Row icon="calendar-outline" text={formatJobDate(job.date)} />
+        <Row
+          icon="calendar-outline"
+          text={`Scheduled: ${formatJobWindow(job.scheduledStart, job.scheduledEnd)}`}
+        />
+        {late && (
+          <View style={styles.lateNote}>
+            <Ionicons name="time-outline" size={14} color="#92400E" />
+            <Text style={styles.lateNoteText}>
+              Late — past scheduled start, cleaner hasn't begun yet.
+            </Text>
+          </View>
+        )}
+        {actual && <Row icon="time-outline" text={actual} />}
         <Row
           icon="person-circle-outline"
           text={`Cleaner: ${job.cleanerName}`}
@@ -424,6 +458,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   declineText: { fontSize: 13, color: "#B91C1C", flex: 1 },
+  lateNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  lateNoteText: { fontSize: 12, color: "#92400E", flex: 1 },
   title: { fontSize: 24, fontWeight: "700" },
   summary: {
     borderRadius: 14,

@@ -22,15 +22,24 @@ export interface Job {
   id: string;
   propertyId: string;
   propertyName: string; // snapshotted at book time
-  address: string;      // snapshotted at book time
-  latitude?: number;    // snapshotted at book time
-  longitude?: number;   // snapshotted at book time
+  address: string; // snapshotted at book time
+  latitude?: number; // snapshotted at book time
+  longitude?: number; // snapshotted at book time
   bookerId: string;
   cleanerId: string;
   cleanerName: string;
   reviewerId: string;
   reviewerName: string;
-  date: string;         // ISO
+
+  /** Booker-set window. Required; a job cannot be created without one. */
+  scheduledStart: string; // ISO
+  scheduledEnd: string; // ISO
+
+  /** Stamped automatically on the `cleaning` transition. */
+  actualStart?: string; // ISO
+  /** Stamped automatically on the `ready-for-review` transition. */
+  actualEnd?: string; // ISO
+
   notes?: string;
   status: JobStatus;
   checklist?: ChecklistItem[];
@@ -39,7 +48,7 @@ export interface Job {
   declineCount: number;
   cleanerNotes?: Note[];
   reviewerNotes?: Note[];
-  createdAt: string;    // ISO
+  createdAt: string; // ISO
 }
 
 export const seedJobs: Job[] = [
@@ -55,7 +64,8 @@ export const seedJobs: Job[] = [
     cleanerName: "Maria Santos",
     reviewerId: "r1",
     reviewerName: "Priya Sharma",
-    date: "2026-05-04T10:00:00.000Z",
+    scheduledStart: "2026-05-04T10:00:00.000Z",
+    scheduledEnd: "2026-05-04T12:00:00.000Z",
     notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-to-clean",
     declineCount: 0,
@@ -73,7 +83,10 @@ export const seedJobs: Job[] = [
     cleanerName: "Maria Santos",
     reviewerId: "r2",
     reviewerName: "Tom Williams",
-    date: "2026-05-02T09:00:00.000Z",
+    scheduledStart: "2026-05-02T09:00:00.000Z",
+    scheduledEnd: "2026-05-02T13:00:00.000Z",
+    actualStart: "2026-05-02T09:15:00.000Z",
+    actualEnd: "2026-05-02T13:30:00.000Z",
     notes: "Gate code 4815. Friendly dog (Rex) in the yard.",
     status: "ready-for-review",
     checklist: [
@@ -104,7 +117,10 @@ export const seedJobs: Job[] = [
     cleanerName: "Aisha Patel",
     reviewerId: "r1",
     reviewerName: "Priya Sharma",
-    date: "2026-04-15T18:00:00.000Z",
+    scheduledStart: "2026-04-15T18:00:00.000Z",
+    scheduledEnd: "2026-04-15T21:00:00.000Z",
+    actualStart: "2026-04-15T18:00:00.000Z",
+    actualEnd: "2026-04-15T20:45:00.000Z",
     notes: "Reception will let the cleaner in. After-hours only.",
     status: "done",
     declineCount: 0,
@@ -119,13 +135,100 @@ export const seedJobs: Job[] = [
   },
 ];
 
+// ---------------- Format helpers ----------------
+
+/**
+ * Compact start-only display, e.g. "Mon, May 4, 10:00 AM". Used in places
+ * that intentionally show a single instant (createdAt, etc.) rather than a
+ * window.
+ */
 export function formatJobDate(iso: string): string {
-  const date = new Date(iso);
-  return date.toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+/**
+ * Format a scheduled window. Same-day windows collapse to one date prefix:
+ *   "Mon, May 4, 10:00 AM – 12:00 PM"
+ * Cross-day windows fall back to two full timestamps.
+ */
+export function formatJobWindow(startISO: string, endISO: string): string {
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  const sameDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const timeFmt: Intl.DateTimeFormatOptions = {
+    hour: "numeric",
+    minute: "2-digit",
+  };
+
+  if (sameDay) {
+    const datePart = start.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+    return `${datePart}, ${start.toLocaleTimeString(undefined, timeFmt)} – ${end.toLocaleTimeString(undefined, timeFmt)}`;
+  }
+  return `${formatJobDate(startISO)} – ${formatJobDate(endISO)}`;
+}
+
+/**
+ * A job is "late" when its scheduled start has passed but no cleaner has
+ * actually started yet — i.e. it's still `ready-to-clean` after the start
+ * time. `now` is injected to keep this pure/testable; defaults to wall
+ * clock.
+ */
+export function isJobLate(job: Job, now: number = Date.now()): boolean {
+  return (
+    job.status === "ready-to-clean" &&
+    new Date(job.scheduledStart).getTime() < now
+  );
+}
+
+// ---------------- Week grouping helpers ----------------
+
+/**
+ * Returns the Monday 00:00 (local time) of the week containing the given
+ * ISO timestamp. Used as a stable key for grouping jobs in History.
+ */
+export function getWeekStart(iso: string): Date {
+  const d = new Date(iso);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0 = Sunday, 1 = Monday, …
+  const diff = day === 0 ? -6 : 1 - day; // back up to Monday
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+/**
+ * Human-readable label for a week-start Date:
+ *   "This week", "Last week", or "Apr 27 – May 3".
+ */
+export function formatWeekLabel(weekStart: Date, now: Date = new Date()): string {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+
+  const thisWeekStart = getWeekStart(now.toISOString());
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+  if (weekStart.getTime() === thisWeekStart.getTime()) return "This week";
+  if (weekStart.getTime() === lastWeekStart.getTime()) return "Last week";
+
+  const month = (d: Date) =>
+    d.toLocaleDateString(undefined, { month: "short" });
+  const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
+  if (sameMonth) {
+    return `${month(weekStart)} ${weekStart.getDate()} – ${weekEnd.getDate()}`;
+  }
+  return `${month(weekStart)} ${weekStart.getDate()} – ${month(weekEnd)} ${weekEnd.getDate()}`;
 }
