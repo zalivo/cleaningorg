@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 import { Tabs } from "expo-router";
 import { BRAND } from "@/constants/colors";
+import { useT } from "@/lib/i18n";
 import { useActiveIdentity } from "@/store/identity";
 import {
   useJobsForBooker,
@@ -13,6 +14,7 @@ export default function TabsLayout() {
   const { colors } = useTheme();
   const identity = useActiveIdentity();
   const role = identity.role;
+  const t = useT();
 
   const bookerJobs = useJobsForBooker(identity.id);
   const cleanerJobs = useJobsForCleaner(identity.id);
@@ -20,10 +22,10 @@ export default function TabsLayout() {
 
   const jobsLabel =
     role === "booker"
-      ? "My Bookings"
+      ? t("tabs.bookings")
       : role === "cleaner"
-        ? "My Jobs"
-        : "To Review";
+        ? t("tabs.jobs")
+        : t("tabs.review");
 
   const jobsCount =
     role === "booker"
@@ -47,7 +49,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t("tabs.home"),
           href: role === "booker" ? "/" : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" color={color} size={size} />
@@ -68,7 +70,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="history"
         options={{
-          title: "History",
+          title: t("tabs.history"),
           href: role === "booker" ? null : "/history",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time-outline" color={color} size={size} />
@@ -78,7 +80,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: t("tabs.profile"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" color={color} size={size} />
           ),

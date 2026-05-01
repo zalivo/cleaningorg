@@ -14,6 +14,7 @@ import { ProAvatar } from "@/components/pro-avatar";
 import { BRAND } from "@/constants/colors";
 import { identities, type Role } from "@/data/identities";
 import { formatPrice } from "@/data/jobs";
+import { SUPPORTED_LOCALES, useLocaleStore, useT } from "@/lib/i18n";
 import { useActiveIdentity, useIdentityStore } from "@/store/identity";
 import {
   useBookerSpend,
@@ -22,18 +23,21 @@ import {
 } from "@/store/jobs";
 import { usePropertiesStore } from "@/store/properties";
 
-const ROLE_LABEL: Record<Role, string> = {
-  booker: "Booker",
-  cleaner: "Cleaner",
-  reviewer: "Reviewer",
-};
-
 export default function ProfileRoute() {
   const { colors } = useTheme();
   const identity = useActiveIdentity();
   const setActive = useIdentityStore((s) => s.setActiveIdentity);
   const resetJobs = useJobsStore((s) => s.resetDemo);
   const resetProperties = usePropertiesStore((s) => s.resetDemo);
+  const t = useT();
+  const locale = useLocaleStore((s) => s.locale);
+  const setLocale = useLocaleStore((s) => s.setLocale);
+
+  const ROLE_LABEL: Record<Role, string> = {
+    booker: t("profile.roles.booker"),
+    cleaner: t("profile.roles.cleaner"),
+    reviewer: t("profile.roles.reviewer"),
+  };
 
   // Both selectors run unconditionally (hooks rules). Each demo identity
   // is bound to a single role, so the off-role selector's `id` filter
@@ -44,10 +48,19 @@ export default function ProfileRoute() {
   const bookerSpend = useBookerSpend(identity.id);
   const totals =
     identity.role === "cleaner"
-      ? { label: "Earnings", ...cleanerEarnings }
+      ? { label: t("profile.totals.earnings"), ...cleanerEarnings }
       : identity.role === "booker"
-        ? { label: "Total spend", ...bookerSpend }
+        ? { label: t("profile.totals.spend"), ...bookerSpend }
         : null;
+
+  const totalsSub =
+    !totals
+      ? ""
+      : totals.jobCount === 0
+        ? t("profile.totals.noJobs")
+        : totals.jobCount === 1
+          ? t("profile.totals.acrossOne")
+          : t("profile.totals.acrossMany", { count: totals.jobCount });
 
   function confirmReset() {
     const ok = () => {
@@ -55,14 +68,14 @@ export default function ProfileRoute() {
       resetProperties();
     };
     if (Platform.OS === "web") {
-      if (window.confirm("Reset demo data?")) ok();
+      if (window.confirm(t("profile.resetTitle"))) ok();
     } else {
       Alert.alert(
-        "Reset demo data?",
-        "All current jobs and properties will be replaced with the seed data.",
+        t("profile.resetTitle"),
+        t("profile.resetBody"),
         [
-          { text: "Keep", style: "cancel" },
-          { text: "Reset", style: "destructive", onPress: ok },
+          { text: t("profile.resetKeep"), style: "cancel" },
+          { text: t("profile.resetConfirm"), style: "destructive", onPress: ok },
         ]
       );
     }
@@ -103,19 +116,51 @@ export default function ProfileRoute() {
               {formatPrice(totals.totalCents)}
             </Text>
             <Text style={[styles.totalsSub, { color: colors.text }]}>
-              {totals.jobCount === 0
-                ? "No completed jobs yet"
-                : `Across ${totals.jobCount} completed ${totals.jobCount === 1 ? "job" : "jobs"}`}
+              {totalsSub}
             </Text>
           </View>
         )}
 
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Demo identity
+            {t("profile.sectionLanguage")}
+          </Text>
+        </View>
+        <View style={styles.localeRow}>
+          {SUPPORTED_LOCALES.map((opt) => {
+            const active = opt.code === locale;
+            return (
+              <Pressable
+                key={opt.code}
+                onPress={() => setLocale(opt.code)}
+                style={({ pressed }) => [
+                  styles.localeChip,
+                  {
+                    backgroundColor: active ? BRAND : colors.card,
+                    borderColor: active ? BRAND : colors.border,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.localeChipText,
+                    { color: active ? "white" : colors.text },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {t("profile.sectionIdentity")}
           </Text>
           <Text style={[styles.sectionHint, { color: colors.text }]}>
-            Tap to switch between booker, cleaner, and reviewer views.
+            {t("profile.identityHint")}
           </Text>
         </View>
         <View style={styles.identityList}>
@@ -161,12 +206,12 @@ export default function ProfileRoute() {
         >
           <Ionicons name="refresh-outline" size={18} color={colors.text} />
           <Text style={[styles.resetText, { color: colors.text }]}>
-            Reset demo data
+            {t("profile.reset")}
           </Text>
         </Pressable>
 
         <Text style={[styles.version, { color: colors.text }]}>
-          CleaningOrg · v1.0.0
+          {t("profile.version")}
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -236,4 +281,12 @@ const styles = StyleSheet.create({
   },
   resetText: { fontSize: 15, fontWeight: "600" },
   version: { fontSize: 12, opacity: 0.5, textAlign: "center", marginTop: 8 },
+  localeRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  localeChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  localeChipText: { fontSize: 14, fontWeight: "600" },
 });

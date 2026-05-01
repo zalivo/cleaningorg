@@ -9,24 +9,27 @@ import {
   formatPrice,
   isJobLate,
 } from "@/data/jobs";
+import { type MessageKey, useT } from "@/lib/i18n";
 
 interface Props {
   job: Job;
   onPress?: () => void;
 }
 
-const STATUS_STYLES: Record<JobStatus, { bg: string; fg: string; label: string }> = {
-  "ready-to-clean": { bg: BRAND_LIGHT, fg: BRAND, label: "Ready to clean" },
-  cleaning: { bg: "#FEF3C7", fg: "#B45309", label: "Cleaning" },
-  "ready-for-review": { bg: "#DBEAFE", fg: "#1D4ED8", label: "Ready for review" },
-  reviewing: { bg: "#EDE9FE", fg: "#6D28D9", label: "Reviewing" },
-  done: { bg: "#E5E7EB", fg: "#374151", label: "Done" },
-  cancelled: { bg: "#FEE2E2", fg: "#B91C1C", label: "Cancelled" },
+const STATUS_COLORS: Record<JobStatus, { bg: string; fg: string }> = {
+  "ready-to-clean": { bg: BRAND_LIGHT, fg: BRAND },
+  cleaning: { bg: "#FEF3C7", fg: "#B45309" },
+  "ready-for-review": { bg: "#DBEAFE", fg: "#1D4ED8" },
+  reviewing: { bg: "#EDE9FE", fg: "#6D28D9" },
+  done: { bg: "#E5E7EB", fg: "#374151" },
+  cancelled: { bg: "#FEE2E2", fg: "#B91C1C" },
 };
 
 export function JobCard({ job, onPress }: Props) {
   const { colors } = useTheme();
-  const status = STATUS_STYLES[job.status];
+  const t = useT();
+  const status = STATUS_COLORS[job.status];
+  const statusLabel = t(`status.${job.status}` as MessageKey);
   const late = isJobLate(job);
 
   return (
@@ -47,7 +50,7 @@ export function JobCard({ job, onPress }: Props) {
         </Text>
         <View style={[styles.pill, { backgroundColor: status.bg }]}>
           <Text style={[styles.pillText, { color: status.fg }]}>
-            {status.label}
+            {statusLabel}
           </Text>
         </View>
       </View>
@@ -74,7 +77,7 @@ export function JobCard({ job, onPress }: Props) {
             accessibilityLabel="This job is past its scheduled start"
           >
             <Ionicons name="time-outline" size={12} color="#92400E" />
-            <Text style={styles.lateText}>Late</Text>
+            <Text style={styles.lateText}>{t("late")}</Text>
           </View>
         )}
       </View>
@@ -82,7 +85,10 @@ export function JobCard({ job, onPress }: Props) {
         <View style={[styles.row, styles.declineRow]}>
           <Ionicons name="alert-circle-outline" size={14} color="#B91C1C" />
           <Text style={styles.declineText} numberOfLines={2}>
-            Declined {job.declineCount}× — {job.declineReason}
+            {t("job.declinedShort", {
+              count: job.declineCount,
+              reason: job.declineReason ?? "",
+            })}
           </Text>
         </View>
       )}

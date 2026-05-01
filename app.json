@@ -39,7 +39,8 @@
             "targetSdkVersion": 35
           }
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "router": {},

@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BRAND, BRAND_LIGHT } from "@/constants/colors";
 import { geocodeAddress } from "@/lib/geocode";
+import { useT } from "@/lib/i18n";
 import { useActiveIdentity } from "@/store/identity";
 import { usePropertiesForOwner, usePropertiesStore } from "@/store/properties";
 
@@ -29,6 +30,7 @@ export default function HomeRoute() {
   const addProperty = usePropertiesStore((s) => s.addProperty);
   const updateProperty = usePropertiesStore((s) => s.updateProperty);
   const deleteProperty = usePropertiesStore((s) => s.deleteProperty);
+  const t = useT();
 
   const [editorMode, setEditorMode] = useState<
     | { kind: "closed" }
@@ -78,9 +80,15 @@ export default function HomeRoute() {
 
   async function submit() {
     if (!name.trim())
-      return notify("Name required", "Give the property a short name.");
+      return notify(
+        t("book.alerts.propertyRequired"),
+        t("property.namePlaceholder")
+      );
     if (!address.trim())
-      return notify("Address required", "Type the address.");
+      return notify(
+        t("book.alerts.addressRequired"),
+        t("book.alerts.addressBody")
+      );
     if (saving) return; // double-tap guard
 
     const trimmedName = name.trim();
@@ -124,12 +132,16 @@ export default function HomeRoute() {
   function confirmDelete(id: string, label: string) {
     const ok = () => deleteProperty(id);
     if (Platform.OS === "web") {
-      if (window.confirm(`Delete "${label}"?`)) ok();
+      if (window.confirm(t("property.deletePrompt", { name: label }))) ok();
     } else {
-      Alert.alert("Delete property?", `"${label}" will be removed.`, [
-        { text: "Keep", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: ok },
-      ]);
+      Alert.alert(
+        t("property.deleteAlertTitle"),
+        t("property.deleteAlertBody", { name: label }),
+        [
+          { text: t("property.keep"), style: "cancel" },
+          { text: t("property.delete"), style: "destructive", onPress: ok },
+        ]
+      );
     }
   }
 
@@ -144,10 +156,10 @@ export default function HomeRoute() {
       >
         <View style={styles.header}>
           <Text style={[styles.greeting, { color: colors.text }]}>
-            Hi, {firstName} 👋
+            {t("home.greeting", { name: firstName })}
           </Text>
           <Text style={[styles.subtitle, { color: colors.text }]}>
-            Manage your properties and book a cleaning when you need one.
+            {t("home.subtitle")}
           </Text>
         </View>
 
@@ -163,14 +175,14 @@ export default function HomeRoute() {
           ]}
         >
           <Ionicons name="sparkles" size={20} color="white" />
-          <Text style={styles.ctaText}>Book a cleaning</Text>
+          <Text style={styles.ctaText}>{t("home.bookCta")}</Text>
           <Ionicons name="arrow-forward" size={18} color="white" />
         </Pressable>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              My properties
+              {t("home.properties")}
             </Text>
             {editorMode.kind === "closed" && (
               <Pressable
@@ -181,7 +193,9 @@ export default function HomeRoute() {
                 ]}
               >
                 <Ionicons name="add" size={16} color={BRAND} />
-                <Text style={[styles.addBtnText, { color: BRAND }]}>Add</Text>
+                <Text style={[styles.addBtnText, { color: BRAND }]}>
+                  {t("home.add")}
+                </Text>
               </Pressable>
             )}
           </View>
@@ -194,28 +208,17 @@ export default function HomeRoute() {
               ]}
             >
               <Text style={[styles.editorTitle, { color: colors.text }]}>
-                {editorMode.kind === "editing" ? "Edit property" : "New property"}
+                {editorMode.kind === "editing"
+                  ? t("property.edit")
+                  : t("property.new")}
               </Text>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>Name</Text>
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                {t("property.name")}
+              </Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="Evergreen House"
-                placeholderTextColor={colors.text + "80"}
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-              />
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>Address</Text>
-              <TextInput
-                value={address}
-                onChangeText={setAddress}
-                placeholder="742 Evergreen Terrace"
+                placeholder={t("property.namePlaceholder")}
                 placeholderTextColor={colors.text + "80"}
                 style={[
                   styles.input,
@@ -227,12 +230,29 @@ export default function HomeRoute() {
                 ]}
               />
               <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                Notes (optional)
+                {t("property.address")}
+              </Text>
+              <TextInput
+                value={address}
+                onChangeText={setAddress}
+                placeholder={t("property.addressPlaceholder")}
+                placeholderTextColor={colors.text + "80"}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
+              />
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                {t("property.notes")}
               </Text>
               <TextInput
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="Gate code, parking, pets, etc."
+                placeholder={t("property.notesPlaceholder")}
                 placeholderTextColor={colors.text + "80"}
                 multiline
                 style={[
@@ -258,7 +278,7 @@ export default function HomeRoute() {
                   ]}
                 >
                   <Text style={[styles.btnGhostText, { color: colors.text }]}>
-                    Cancel
+                    {t("property.cancel")}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -273,11 +293,9 @@ export default function HomeRoute() {
                   ]}
                 >
                   <Text style={styles.btnPrimaryText}>
-                    {saving
-                      ? "Looking up address…"
-                      : editorMode.kind === "editing"
-                        ? "Save changes"
-                        : "Save property"}
+                    {editorMode.kind === "editing"
+                      ? t("property.saveChanges")
+                      : t("property.save")}
                   </Text>
                 </Pressable>
               </View>
@@ -293,10 +311,10 @@ export default function HomeRoute() {
             >
               <Ionicons name="home-outline" size={24} color={BRAND} />
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                No properties yet
+                {t("home.emptyTitle")}
               </Text>
               <Text style={[styles.emptyBody, { color: colors.text }]}>
-                Add a property to start booking cleanings.
+                {t("home.emptyBody")}
               </Text>
             </View>
           ) : (
@@ -347,7 +365,7 @@ export default function HomeRoute() {
                         { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
                       ]}
                     >
-                      <Text style={styles.bookSmallText}>Book</Text>
+                      <Text style={styles.bookSmallText}>{t("home.bookSmall")}</Text>
                     </Pressable>
                     <View style={{ flexDirection: "row", gap: 8 }}>
                       <Pressable
@@ -386,22 +404,22 @@ export default function HomeRoute() {
 
         <View style={[styles.benefits, { backgroundColor: BRAND_LIGHT }]}>
           <Text style={[styles.benefitsTitle, { color: BRAND }]}>
-            Why CleaningOrg?
+            {t("home.benefits.title")}
           </Text>
           <View style={styles.benefitRow}>
             <Ionicons name="shield-checkmark-outline" size={18} color={BRAND} />
-            <Text style={styles.benefitText}>Verified, background-checked pros</Text>
+            <Text style={styles.benefitText}>{t("home.benefits.verified")}</Text>
           </View>
           <View style={styles.benefitRow}>
             <Ionicons name="time-outline" size={18} color={BRAND} />
             <Text style={styles.benefitText}>
-              Flexible scheduling — daily, weekly, monthly
+              {t("home.benefits.flexible")}
             </Text>
           </View>
           <View style={styles.benefitRow}>
             <Ionicons name="checkbox-outline" size={18} color={BRAND} />
             <Text style={styles.benefitText}>
-              Independent reviewers approve every clean
+              {t("home.benefits.reviewers")}
             </Text>
           </View>
         </View>

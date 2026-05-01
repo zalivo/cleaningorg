@@ -27,6 +27,7 @@ import {
   professionals,
 } from "@/data/professionals";
 import { getReviewer, reviewers } from "@/data/reviewers";
+import { type MessageKey, useT } from "@/lib/i18n";
 import { useActiveIdentity } from "@/store/identity";
 import { useJobsStore } from "@/store/jobs";
 import { usePropertiesForOwner, useProperty } from "@/store/properties";
@@ -100,6 +101,7 @@ export default function BookRoute() {
   const identity = useActiveIdentity();
   const bookJob = useJobsStore((s) => s.bookJob);
   const isBooker = identity.role === "booker";
+  const t = useT();
 
   const myProperties = usePropertiesForOwner(identity.id);
   const preselectedPro = params.proId ? getProfessional(params.proId) : undefined;
@@ -140,29 +142,29 @@ export default function BookRoute() {
 
   const handleConfirm = () => {
     if (!isBooker) {
-      notify(
-        "Switch to admin",
-        "Only the property admin can create new bookings. Switch from the Profile tab."
-      );
+      notify(t("book.alerts.notBookerTitle"), t("book.alerts.notBookerBody"));
       return;
     }
     if (!property) {
-      notify("Property required", "Pick a property to clean.");
+      notify(t("book.alerts.propertyRequired"), t("book.alerts.propertyBody"));
       return;
     }
     if (!cleanerId) {
-      notify("Cleaner required", "Please pick a cleaner.");
+      notify(t("book.alerts.cleanerRequired"), t("book.alerts.cleanerBody"));
       return;
     }
     if (!reviewerId) {
-      notify("Reviewer required", "Please pick a reviewer.");
+      notify(t("book.alerts.reviewerRequired"), t("book.alerts.reviewerBody"));
       return;
     }
 
     const cleaner = getProfessional(cleanerId);
     const reviewer = getReviewer(reviewerId);
     if (!cleaner || !reviewer) {
-      notify("Booking failed", "Selected cleaner or reviewer no longer exists.");
+      notify(
+        t("book.alerts.bookingFailedTitle"),
+        t("book.alerts.bookingFailedBody")
+      );
       return;
     }
 
@@ -204,10 +206,10 @@ export default function BookRoute() {
         >
           <Ionicons name="home-outline" size={28} color={BRAND} />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>
-            No properties yet
+            {t("book.emptyTitle")}
           </Text>
           <Text style={[styles.emptyBody, { color: colors.text }]}>
-            Add a property from the Home tab before booking a cleaning.
+            {t("book.emptyBody")}
           </Text>
           <Pressable
             onPress={() => router.replace("/")}
@@ -216,7 +218,7 @@ export default function BookRoute() {
               { backgroundColor: BRAND, opacity: pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={styles.confirmText}>Go to Home</Text>
+            <Text style={styles.confirmText}>{t("book.goHome")}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -236,7 +238,10 @@ export default function BookRoute() {
           <View style={[styles.roleBanner, { backgroundColor: "#FEF3C7" }]}>
             <Ionicons name="alert-circle" size={20} color="#92400E" />
             <Text style={styles.roleBannerText}>
-              You're viewing as <Text style={{ fontWeight: "700" }}>{identity.name}</Text> ({identity.role}). Only the admin can create bookings — switch from the Profile tab.
+              {t("book.roleBanner", {
+                name: identity.name,
+                role: identity.role,
+              })}
             </Text>
           </View>
         )}
@@ -245,13 +250,12 @@ export default function BookRoute() {
           <View style={[styles.proBanner, { backgroundColor: BRAND_LIGHT }]}>
             <Ionicons name="person-circle" size={20} color={BRAND} />
             <Text style={styles.proBannerText}>
-              Pre-selected:{" "}
-              <Text style={{ fontWeight: "700" }}>{preselectedPro.name}</Text>
+              {t("book.preselected", { name: preselectedPro.name })}
             </Text>
           </View>
         )}
 
-        <Field label="Property">
+        <Field label={t("book.property")}>
           <View style={styles.chipsWrap}>
             {myProperties.map((p) => (
               <Chip
@@ -265,12 +269,12 @@ export default function BookRoute() {
           </View>
         </Field>
 
-        <Field label="Date">
+        <Field label={t("book.date")}>
           <View style={styles.chipsWrap}>
             {DATE_OPTIONS.map((d) => (
               <Chip
                 key={d.id}
-                label={d.label}
+                label={t(`book.dates.${d.id}` as MessageKey)}
                 selected={d.id === dateId}
                 onPress={() => setDateId(d.id)}
               />
@@ -278,21 +282,21 @@ export default function BookRoute() {
           </View>
         </Field>
 
-        <Field label="Time">
+        <Field label={t("book.time")}>
           <View style={styles.chipsWrap}>
-            {TIME_OPTIONS.map((t) => (
+            {TIME_OPTIONS.map((opt) => (
               <Chip
-                key={t.id}
-                label={t.label}
-                hint={t.hint}
-                selected={t.id === timeId}
-                onPress={() => setTimeId(t.id)}
+                key={opt.id}
+                label={t(`book.times.${opt.id}` as MessageKey)}
+                hint={t(`book.times.${opt.id}-hint` as MessageKey)}
+                selected={opt.id === timeId}
+                onPress={() => setTimeId(opt.id)}
               />
             ))}
           </View>
         </Field>
 
-        <Field label="Duration">
+        <Field label={t("book.duration")}>
           <View style={styles.chipsWrap}>
             {DURATION_OPTIONS.map((d) => (
               <Chip
@@ -305,7 +309,7 @@ export default function BookRoute() {
           </View>
         </Field>
 
-        <Field label="Cleaner">
+        <Field label={t("book.cleaner")}>
           <View style={styles.chipsWrap}>
             {professionals.map((p) => (
               <CleanerChip
@@ -318,7 +322,7 @@ export default function BookRoute() {
           </View>
         </Field>
 
-        <Field label="Reviewer">
+        <Field label={t("book.reviewer")}>
           <View style={styles.chipsWrap}>
             {reviewers.map((r) => (
               <Chip
@@ -332,11 +336,11 @@ export default function BookRoute() {
           </View>
         </Field>
 
-        <Field label="Notes (optional)">
+        <Field label={t("book.notes")}>
           <TextInput
             value={notes}
             onChangeText={setNotes}
-            placeholder="Gate code, parking, pets, etc."
+            placeholder={t("property.notesPlaceholder")}
             placeholderTextColor={colors.text + "80"}
             multiline
             numberOfLines={3}
@@ -393,7 +397,7 @@ export default function BookRoute() {
           ]}
         >
           <Text style={styles.confirmText}>
-            {isBooker ? "Confirm Booking" : "Switch to admin to book"}
+            {isBooker ? t("book.confirm") : t("book.switchToBook")}
           </Text>
         </Pressable>
       </ScrollView>

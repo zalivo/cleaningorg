@@ -26,6 +26,7 @@ import {
   formatPrice,
   isJobLate,
 } from "@/data/jobs";
+import { type MessageKey, useT } from "@/lib/i18n";
 import { openMapsForAddress } from "@/lib/maps";
 import { useActiveIdentity } from "@/store/identity";
 import { useJob, useJobsStore } from "@/store/jobs";
@@ -39,26 +40,13 @@ const STATUS_STYLES: Record<JobStatus, { bg: string; fg: string; label: string }
   cancelled: { bg: "#FEE2E2", fg: "#B91C1C", label: "Cancelled" },
 };
 
-/**
- * Format the actual cleaning window for display. Returns `null` when no
- * actual times have been stamped yet (i.e. cleaning hasn't started).
- */
-function actualLine(job: Job): string | null {
-  if (job.actualStart && job.actualEnd) {
-    return `Actual: ${formatJobWindow(job.actualStart, job.actualEnd)}`;
-  }
-  if (job.actualStart) {
-    return `Started: ${formatJobDate(job.actualStart)}`;
-  }
-  return null;
-}
-
 export default function JobDetailRoute() {
   const { colors } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const job = useJob(id);
   const identity = useActiveIdentity();
+  const t = useT();
   const cancel = useJobsStore((s) => s.cancel);
   const startCleaning = useJobsStore((s) => s.startCleaning);
   const finishCleaning = useJobsStore((s) => s.finishCleaning);
@@ -74,14 +62,22 @@ export default function JobDetailRoute() {
   if (!job) {
     return (
       <View style={[styles.empty, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.text }}>Job not found.</Text>
+        <Text style={{ color: colors.text }}>{t("job.notFound")}</Text>
       </View>
     );
   }
 
+  // Localized "actual" timing line — null when no actual times stamped yet.
+  const actual: string | null =
+    job.actualStart && job.actualEnd
+      ? formatJobWindow(job.actualStart, job.actualEnd)
+      : job.actualStart
+        ? t("job.started", { when: formatJobDate(job.actualStart) })
+        : null;
+
   const jobId = job.id;
   const status = STATUS_STYLES[job.status];
-  const actual = actualLine(job);
+  const statusLabel = t(`status.${job.status}` as MessageKey);
   const late = isJobLate(job);
   const isAssignedCleaner =
     identity.role === "cleaner" && identity.id === job.cleanerId;
@@ -103,12 +99,20 @@ export default function JobDetailRoute() {
       router.back();
     };
     if (Platform.OS === "web") {
-      if (window.confirm("Cancel this booking?")) ok();
+      if (window.confirm(t("job.actions.cancelConfirmTitle"))) ok();
     } else {
-      Alert.alert("Cancel booking?", "This cannot be undone.", [
-        { text: "Keep", style: "cancel" },
-        { text: "Cancel booking", style: "destructive", onPress: ok },
-      ]);
+      Alert.alert(
+        t("job.actions.cancelConfirmTitle"),
+        t("job.actions.cancelConfirmBody"),
+        [
+          { text: t("job.actions.keep"), style: "cancel" },
+          {
+            text: t("job.actions.cancelDestructive"),
+            style: "destructive",
+            onPress: ok,
+          },
+        ]
+      );
     }
   }
 
@@ -134,7 +138,7 @@ export default function JobDetailRoute() {
     >
       <View style={[styles.statusPill, { backgroundColor: status.bg }]}>
         <Text style={[styles.statusText, { color: status.fg }]}>
-          {status.label}
+          {statusLabel}
         </Text>
       </View>
 
@@ -142,7 +146,10 @@ export default function JobDetailRoute() {
         <View style={styles.declineBanner}>
           <Ionicons name="alert-circle" size={16} color="#B91C1C" />
           <Text style={styles.declineText}>
-            Declined {job.declineCount}× — last reason: {job.declineReason}
+            {t("job.declinedBanner", {
+              count: job.declineCount,
+              reason: job.declineReason,
+            })}
           </Text>
         </View>
       )}
@@ -165,36 +172,34 @@ export default function JobDetailRoute() {
         />
         <Row
           icon="calendar-outline"
-          text={`Scheduled: ${formatJobWindow(job.scheduledStart, job.scheduledEnd)}`}
+          text={formatJobWindow(job.scheduledStart, job.scheduledEnd)}
         />
         {late && (
           <View style={styles.lateNote}>
             <Ionicons name="time-outline" size={14} color="#92400E" />
-            <Text style={styles.lateNoteText}>
-              Late — past scheduled start, cleaner hasn't begun yet.
-            </Text>
+            <Text style={styles.lateNoteText}>{t("late")}</Text>
           </View>
         )}
         {actual && <Row icon="time-outline" text={actual} />}
         <Row
           icon="person-circle-outline"
-          text={`Cleaner: ${job.cleanerName}`}
+          text={t("job.cleanerLabel", { name: job.cleanerName })}
           onPress={() => router.push(`/pros/${job.cleanerId}`)}
         />
         <Row
           icon="shield-checkmark-outline"
-          text={`Reviewer: ${job.reviewerName}`}
+          text={t("job.reviewerLabel", { name: job.reviewerName })}
         />
         <Row
           icon="cash-outline"
-          text={`Total: ${formatPrice(job.priceCents)}`}
+          text={t("job.total", { price: formatPrice(job.priceCents) })}
         />
         {job.notes && <Row icon="document-text-outline" text={job.notes} />}
       </View>
 
       <View style={styles.section}>
         <Text style={[styles.sectionLabel, { color: colors.text }]}>
-          Location
+          {t("job.location")}
         </Text>
         <EmbeddedMap
           address={job.address}
@@ -214,7 +219,7 @@ export default function JobDetailRoute() {
             { opacity: pressed ? 0.8 : 1 },
           ]}
         >
-          <Text style={styles.btnDangerText}>Cancel booking</Text>
+          <Text style={styles.btnDangerText}>{t("job.actions.cancel")}</Text>
         </Pressable>
       )}
 
@@ -227,7 +232,7 @@ export default function JobDetailRoute() {
             { opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <Text style={styles.btnPrimaryText}>Start cleaning</Text>
+          <Text style={styles.btnPrimaryText}>{t("job.actions.startCleaning")}</Text>
         </Pressable>
       )}
       {isAssignedCleaner && job.status === "cleaning" && (
@@ -241,7 +246,7 @@ export default function JobDetailRoute() {
             { opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <Text style={styles.btnPrimaryText}>Mark ready for review</Text>
+          <Text style={styles.btnPrimaryText}>{t("job.actions.finishCleaning")}</Text>
         </Pressable>
       )}
 
@@ -254,7 +259,7 @@ export default function JobDetailRoute() {
             { opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <Text style={styles.btnPrimaryText}>Start review</Text>
+          <Text style={styles.btnPrimaryText}>{t("job.actions.startReview")}</Text>
         </Pressable>
       )}
       {isAssignedReviewer && job.status === "reviewing" && !declineMode && (
@@ -269,7 +274,7 @@ export default function JobDetailRoute() {
               { opacity: pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={styles.btnPrimaryText}>Approve</Text>
+            <Text style={styles.btnPrimaryText}>{t("job.actions.approve")}</Text>
           </Pressable>
           <Pressable
             onPress={() => setDeclineMode(true)}
@@ -278,7 +283,7 @@ export default function JobDetailRoute() {
               { opacity: pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={styles.btnDangerText}>Decline</Text>
+            <Text style={styles.btnDangerText}>{t("job.actions.decline")}</Text>
           </Pressable>
         </View>
       )}
@@ -290,12 +295,12 @@ export default function JobDetailRoute() {
           ]}
         >
           <Text style={[styles.formLabel, { color: colors.text }]}>
-            Reason for decline
+            {t("job.actions.declineReasonLabel")}
           </Text>
           <TextInput
             value={declineReason}
             onChangeText={setDeclineReason}
-            placeholder="What needs to be redone?"
+            placeholder={t("job.actions.declineReasonPlaceholder")}
             placeholderTextColor={colors.text + "80"}
             multiline
             style={[
@@ -319,7 +324,7 @@ export default function JobDetailRoute() {
               ]}
             >
               <Text style={[styles.btnSecondaryText, { color: colors.text }]}>
-                Back
+                {t("job.actions.back")}
               </Text>
             </Pressable>
             <Pressable
@@ -333,7 +338,7 @@ export default function JobDetailRoute() {
                 },
               ]}
             >
-              <Text style={styles.btnDangerText}>Submit decline</Text>
+              <Text style={styles.btnDangerText}>{t("job.actions.submitDecline")}</Text>
             </Pressable>
           </View>
         </View>
@@ -362,11 +367,11 @@ export default function JobDetailRoute() {
       {/* ---- Cleaner notes ---- */}
       <View style={styles.notesSection}>
         <Text style={[styles.notesTitle, { color: colors.text }]}>
-          Cleaner notes
+          {t("job.cleanerNotes")}
         </Text>
         {cleanerNotes.length === 0 ? (
           <Text style={[styles.notesEmpty, { color: colors.text }]}>
-            No cleaner notes yet.
+            {t("job.cleanerNotesEmpty")}
           </Text>
         ) : (
           cleanerNotes.map((n) => (
@@ -375,7 +380,7 @@ export default function JobDetailRoute() {
         )}
         {showCleanerComposer && (
           <NoteComposer
-            placeholder="Note for the reviewer..."
+            placeholder={t("job.composer.cleanerPlaceholder")}
             onSubmit={(input) => addCleanerNote(jobId, input)}
           />
         )}
@@ -384,11 +389,11 @@ export default function JobDetailRoute() {
       {/* ---- Reviewer notes ---- */}
       <View style={styles.notesSection}>
         <Text style={[styles.notesTitle, { color: colors.text }]}>
-          Reviewer notes
+          {t("job.reviewerNotes")}
         </Text>
         {reviewerNotes.length === 0 ? (
           <Text style={[styles.notesEmpty, { color: colors.text }]}>
-            No reviewer notes yet.
+            {t("job.reviewerNotesEmpty")}
           </Text>
         ) : (
           reviewerNotes.map((n) => (
@@ -397,7 +402,7 @@ export default function JobDetailRoute() {
         )}
         {showReviewerComposer && (
           <NoteComposer
-            placeholder="Note for the cleaner..."
+            placeholder={t("job.composer.reviewerPlaceholder")}
             onSubmit={(input) => addReviewerNote(jobId, input)}
           />
         )}

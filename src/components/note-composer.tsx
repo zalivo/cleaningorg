@@ -13,6 +13,7 @@ import {
   Platform,
 } from "react-native";
 import { BRAND } from "@/constants/colors";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   placeholder?: string;
@@ -24,6 +25,7 @@ export function NoteComposer({
   onSubmit,
 }: Props) {
   const { colors } = useTheme();
+  const t = useT();
   const [text, setText] = useState("");
   const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
   const [picking, setPicking] = useState(false);
@@ -52,8 +54,8 @@ export function NoteComposer({
     } catch (err) {
       if (Platform.OS !== "web") {
         Alert.alert(
-          "Couldn't open the photo picker",
-          err instanceof Error ? err.message : "Try again, or add the photo from Settings."
+          t("job.composer.attachError"),
+          err instanceof Error ? err.message : t("job.composer.attachErrorBody")
         );
       }
     } finally {
@@ -117,7 +119,7 @@ export function NoteComposer({
             color={colors.text}
           />
           <Text style={[styles.btnSecondaryText, { color: colors.text }]}>
-            {photoUri ? "Change photo" : "Attach photo"}
+            {photoUri ? t("job.composer.change") : t("job.composer.attach")}
           </Text>
         </Pressable>
         <Pressable
@@ -130,7 +132,7 @@ export function NoteComposer({
             },
           ]}
         >
-          <Text style={styles.btnPrimaryText}>Add note</Text>
+          <Text style={styles.btnPrimaryText}>{t("job.composer.add")}</Text>
         </Pressable>
       </View>
     </View>

@@ -5,6 +5,7 @@ import { Text, StyleSheet, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { JobCard } from "@/components/job-card";
 import { type Job, formatWeekLabel, getWeekStart } from "@/data/jobs";
+import { useT } from "@/lib/i18n";
 import { useActiveIdentity } from "@/store/identity";
 import {
   useHistoryForCleaner,
@@ -39,6 +40,7 @@ export default function HistoryRoute() {
   const { colors } = useTheme();
   const router = useRouter();
   const identity = useActiveIdentity();
+  const t = useT();
 
   const cleanerHistory = useHistoryForCleaner(identity.id);
   const reviewerHistory = useHistoryForReviewer(identity.id);
@@ -56,10 +58,10 @@ export default function HistoryRoute() {
 
   const emptyCopy =
     identity.role === "cleaner"
-      ? "No completed jobs yet."
+      ? t("history.empty.cleaner")
       : identity.role === "reviewer"
-        ? "No reviews completed yet."
-        : "No history.";
+        ? t("history.empty.reviewer")
+        : t("history.empty.default");
 
   return (
     <SafeAreaView
@@ -67,7 +69,7 @@ export default function HistoryRoute() {
       edges={["top"]}
     >
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]}>History</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t("history.title")}</Text>
         {groups.length === 0 ? (
           <Text style={[styles.empty, { color: colors.text }]}>
             {emptyCopy}

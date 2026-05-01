@@ -3,8 +3,8 @@ import { useRouter } from "expo-router";
 import { Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { JobCard } from "@/components/job-card";
-import type { Role } from "@/data/identities";
 import type { Job } from "@/data/jobs";
+import { useT } from "@/lib/i18n";
 import { useActiveIdentity } from "@/store/identity";
 import {
   useJobsForBooker,
@@ -12,22 +12,11 @@ import {
   useJobsForReviewer,
 } from "@/store/jobs";
 
-const TITLES: Record<Role, string> = {
-  booker: "My Bookings",
-  cleaner: "My Jobs",
-  reviewer: "To Review",
-};
-
-const EMPTY: Record<Role, string> = {
-  booker: "You haven't booked any cleanings yet. Tap Home → Book a cleaning to get started.",
-  cleaner: "No jobs assigned to you.",
-  reviewer: "Nothing to review yet.",
-};
-
 export default function JobsRoute() {
   const { colors } = useTheme();
   const router = useRouter();
   const identity = useActiveIdentity();
+  const t = useT();
 
   const bookerJobs = useJobsForBooker(identity.id);
   const cleanerJobs = useJobsForCleaner(identity.id);
@@ -40,6 +29,20 @@ export default function JobsRoute() {
         ? cleanerJobs
         : reviewerJobs;
 
+  const title =
+    identity.role === "booker"
+      ? t("jobs.titles.booker")
+      : identity.role === "cleaner"
+        ? t("jobs.titles.cleaner")
+        : t("jobs.titles.reviewer");
+
+  const emptyCopy =
+    identity.role === "booker"
+      ? t("jobs.empty.booker")
+      : identity.role === "cleaner"
+        ? t("jobs.empty.cleaner")
+        : t("jobs.empty.reviewer");
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -47,11 +50,11 @@ export default function JobsRoute() {
     >
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[styles.title, { color: colors.text }]}>
-          {TITLES[identity.role]}
+          {title}
         </Text>
         {jobs.length === 0 ? (
           <Text style={[styles.empty, { color: colors.text }]}>
-            {EMPTY[identity.role]}
+            {emptyCopy}
           </Text>
         ) : (
           jobs.map((j) => (

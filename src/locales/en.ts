@@ -1,0 +1,198 @@
+// English message catalog. This file is the source of truth for the
+// translation keys — `cs` and `sk` mirror its shape and TypeScript will
+// flag drift via the LocaleMessages type.
+export const en = {
+  tabs: {
+    home: "Home",
+    bookings: "My Bookings",
+    jobs: "My Jobs",
+    review: "To Review",
+    history: "History",
+    profile: "Profile",
+  },
+  status: {
+    "ready-to-clean": "Ready to clean",
+    cleaning: "Cleaning",
+    "ready-for-review": "Ready for review",
+    reviewing: "Reviewing",
+    done: "Done",
+    cancelled: "Cancelled",
+  },
+  home: {
+    greeting: "Hi, {name} 👋",
+    subtitle: "Manage your properties and book a cleaning when you need one.",
+    bookCta: "Book a cleaning",
+    properties: "My properties",
+    add: "Add",
+    bookSmall: "Book",
+    emptyTitle: "No properties yet",
+    emptyBody: "Add a property to start booking cleanings.",
+    benefits: {
+      title: "Why CleaningOrg?",
+      verified: "Verified, background-checked pros",
+      flexible: "Flexible scheduling — daily, weekly, monthly",
+      reviewers: "Independent reviewers approve every clean",
+    },
+  },
+  property: {
+    new: "New property",
+    edit: "Edit property",
+    name: "Name",
+    address: "Address",
+    notes: "Notes (optional)",
+    namePlaceholder: "Pařížská Apartment",
+    addressPlaceholder: "Pařížská 5, 110 00 Praha 1",
+    notesPlaceholder: "Gate code, parking, pets, etc.",
+    cancel: "Cancel",
+    save: "Save property",
+    saveChanges: "Save changes",
+    deletePrompt: "Delete \"{name}\"?",
+    deleteAlertTitle: "Delete property?",
+    deleteAlertBody: "\"{name}\" will be removed.",
+    keep: "Keep",
+    delete: "Delete",
+  },
+  book: {
+    title: "Book a Cleaning",
+    property: "Property",
+    date: "Date",
+    time: "Time",
+    duration: "Duration",
+    cleaner: "Cleaner",
+    reviewer: "Reviewer",
+    notes: "Notes (optional)",
+    confirm: "Confirm Booking",
+    switchToBook: "Switch to admin to book",
+    roleBanner: "You're viewing as {name} ({role}). Only the admin can create bookings — switch from the Profile tab.",
+    preselected: "Pre-selected: {name}",
+    emptyTitle: "No properties yet",
+    emptyBody: "Add a property from the Home tab before booking a cleaning.",
+    goHome: "Go to Home",
+    dates: {
+      tomorrow: "Tomorrow",
+      "in-2-days": "In 2 days",
+      weekend: "This weekend",
+      "next-week": "Next week",
+    },
+    times: {
+      morning: "Morning",
+      afternoon: "Afternoon",
+      evening: "Evening",
+      "morning-hint": "8am – 12pm",
+      "afternoon-hint": "12pm – 5pm",
+      "evening-hint": "5pm – 9pm",
+    },
+    alerts: {
+      addressRequired: "Address required",
+      addressBody: "Please enter the address for the cleaning.",
+      propertyRequired: "Property required",
+      propertyBody: "Pick a property to clean.",
+      cleanerRequired: "Cleaner required",
+      cleanerBody: "Please pick a cleaner.",
+      reviewerRequired: "Reviewer required",
+      reviewerBody: "Please pick a reviewer.",
+      notBookerTitle: "Switch to admin",
+      notBookerBody: "Only the property admin can create new bookings. Switch from the Profile tab.",
+      bookingFailedTitle: "Booking failed",
+      bookingFailedBody: "Selected cleaner or reviewer no longer exists.",
+    },
+  },
+  job: {
+    title: "Job Details",
+    cleanerLabel: "Cleaner: {name}",
+    reviewerLabel: "Reviewer: {name}",
+    declinedBanner: "Declined {count}× — last reason: {reason}",
+    declinedShort: "Declined {count}× — {reason}",
+    started: "Started: {when}",
+    total: "Total: {price}",
+    actions: {
+      cancel: "Cancel booking",
+      cancelConfirmTitle: "Cancel booking?",
+      cancelConfirmBody: "This cannot be undone.",
+      keep: "Keep",
+      cancelDestructive: "Cancel booking",
+      startCleaning: "Start cleaning",
+      finishCleaning: "Mark ready for review",
+      startReview: "Start review",
+      approve: "Approve",
+      decline: "Decline",
+      back: "Back",
+      submitDecline: "Submit decline",
+      declineReasonLabel: "Reason for decline",
+      declineReasonPlaceholder: "What needs to be redone?",
+    },
+    notFound: "Job not found.",
+    location: "Location",
+    cleanerNotes: "Cleaner notes",
+    reviewerNotes: "Reviewer notes",
+    cleanerNotesEmpty: "No cleaner notes yet.",
+    reviewerNotesEmpty: "No reviewer notes yet.",
+    composer: {
+      cleanerPlaceholder: "Note for the reviewer...",
+      reviewerPlaceholder: "Note for the cleaner...",
+      attach: "Attach photo",
+      change: "Change photo",
+      add: "Add note",
+      attachError: "Couldn't open the photo picker",
+      attachErrorBody: "Try again, or add the photo from Settings.",
+    },
+  },
+  jobs: {
+    titles: {
+      booker: "My Bookings",
+      cleaner: "My Jobs",
+      reviewer: "To Review",
+    },
+    empty: {
+      booker: "You haven't booked any cleanings yet. Tap Home → Book a cleaning to get started.",
+      cleaner: "No jobs assigned to you.",
+      reviewer: "Nothing to review yet.",
+    },
+  },
+  history: {
+    title: "History",
+    empty: {
+      cleaner: "No completed jobs yet.",
+      reviewer: "No reviews completed yet.",
+      default: "No history.",
+    },
+  },
+  profile: {
+    sectionLanguage: "Language",
+    sectionIdentity: "Demo identity",
+    identityHint: "Tap to switch between booker, cleaner, and reviewer views.",
+    roles: {
+      booker: "Booker",
+      cleaner: "Cleaner",
+      reviewer: "Reviewer",
+    },
+    totals: {
+      earnings: "Earnings",
+      spend: "Total spend",
+      noJobs: "No completed jobs yet",
+      acrossOne: "Across 1 completed job",
+      acrossMany: "Across {count} completed jobs",
+    },
+    reset: "Reset demo data",
+    resetTitle: "Reset demo data?",
+    resetBody: "All current jobs and properties will be replaced with the seed data.",
+    resetKeep: "Keep",
+    resetConfirm: "Reset",
+    version: "CleaningOrg · v1.0.0",
+  },
+  late: "Late",
+  ok: "OK",
+};
+
+// Widen literal string types so that other locale files can supply
+// translated values for the same keys without TS narrowing the literal
+// to the English source string.
+type Widen<T> = T extends string
+  ? string
+  : T extends Array<infer E>
+    ? Array<Widen<E>>
+    : T extends object
+      ? { [K in keyof T]: Widen<T[K]> }
+      : T;
+
+export type LocaleMessages = Widen<typeof en>;
